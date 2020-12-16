@@ -54,7 +54,7 @@
             app:layout_constraintLeft_toRightOf="@id/pause"
             android:layout_gravity="center"
             android:onClick="onClick"/>
-    <com.android.hq.qmedia.ffmpeglib.WlGlSurfaceView
+    <com.android.hq.qmedia.ffmpeglib.QGLSurfaceView
             android:id="@+id/surface"
             app:layout_constraintTop_toBottomOf="@id/play"
             android:layout_width="match_parent"

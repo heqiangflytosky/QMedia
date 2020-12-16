@@ -13,11 +13,7 @@ import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 import java.nio.*;
 
-/**
- * Created by hlwky001 on 2017/12/15.
- */
-
-public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener{
+public class QGLRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFrameAvailableListener{
 
     private Context context;
     private FloatBuffer vertexBuffer;
@@ -82,10 +78,10 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 
 
 
-    private WlOnGlSurfaceViewOncreateListener wlOnGlSurfaceViewOncreateListener;
-    private WlOnRenderRefreshListener wlOnRenderRefreshListener;
+    private QMediaPlayer.OnGlSurfaceViewOnCreateListener onGlSurfaceViewOncreateListener;
+    private QMediaPlayer.OnRenderRefreshListener onRenderRefreshListener;
 
-    public WlGlRender(Context context) {
+    public QGLRender(Context context) {
         this.context = context;
 
         vertexBuffer = ByteBuffer.allocateDirect(vertexData.length * 4)
@@ -118,7 +114,7 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 
     @Override
     public void onSurfaceCreated(GL10 gl, EGLConfig config) {
-        MyLog.d("onSurfaceCreated");
+        LogUtil.d("onSurfaceCreated");
         initMediacodecShader();
         initYuvShader();
         initStop();
@@ -126,7 +122,7 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 
     @Override
     public void onSurfaceChanged(GL10 gl, int width, int height) {
-        MyLog.d("onSurfaceChanged, width:" + width + ",height :" + height);
+        LogUtil.d("onSurfaceChanged, width:" + width + ",height :" + height);
         sWidth = width;
         sHeight = height;
         GLES20.glViewport(0,0,width, height);
@@ -140,12 +136,12 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         if(codecType == 1)
         {
             renderMediacodec();
-            MyLog.d("mediaocdec.......");
+            LogUtil.d("mediaocdec.......");
         }
         else if(codecType == 0)
         {
             renderYuv();
-            MyLog.d("yuv.......");
+            LogUtil.d("yuv.......");
         }
         else
         {
@@ -156,9 +152,9 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         {
             cutimg = false;
             Bitmap bitmap = cutBitmap(0, 0, sWidth, sHeight);
-            if(wlOnGlSurfaceViewOncreateListener != null)
+            if(onGlSurfaceViewOncreateListener != null)
             {
-                wlOnGlSurfaceViewOncreateListener.onCutVideoImg(bitmap);
+                onGlSurfaceViewOncreateListener.onCutVideoImg(bitmap);
             }
         }
 
@@ -166,19 +162,19 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 
     @Override
     public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-        MyLog.d("updateSurface");
-        if(wlOnRenderRefreshListener != null)
+        LogUtil.d("updateSurface");
+        if(onRenderRefreshListener != null)
         {
-            wlOnRenderRefreshListener.onRefresh();
+            onRenderRefreshListener.onRefresh();
         }
     }
 
-    public void setWlOnGlSurfaceViewOncreateListener(WlOnGlSurfaceViewOncreateListener wlOnGlSurfaceViewOncreateListener) {
-        this.wlOnGlSurfaceViewOncreateListener = wlOnGlSurfaceViewOncreateListener;
+    public void setOnGlSurfaceViewOncreateListener(QMediaPlayer.OnGlSurfaceViewOnCreateListener onGlSurfaceViewOncreateListener) {
+        this.onGlSurfaceViewOncreateListener = onGlSurfaceViewOncreateListener;
     }
 
-    public void setWlOnRenderRefreshListener(WlOnRenderRefreshListener wlOnRenderRefreshListener) {
-        this.wlOnRenderRefreshListener = wlOnRenderRefreshListener;
+    public void setOnRenderRefreshListener(QMediaPlayer.OnRenderRefreshListener onRenderRefreshListener) {
+        this.onRenderRefreshListener = onRenderRefreshListener;
     }
 
     /**
@@ -186,9 +182,9 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
      */
     private void initMediacodecShader()
     {
-        String vertexShader = WlShaderUtils.readRawTextFile(context, R.raw.vertex_base);
-        String fragmentShader = WlShaderUtils.readRawTextFile(context, R.raw.fragment_mediacodec);
-        programId_mediacodec = WlShaderUtils.createProgram(vertexShader, fragmentShader);
+        String vertexShader = QShaderUtils.readRawTextFile(context, R.raw.vertex_base);
+        String fragmentShader = QShaderUtils.readRawTextFile(context, R.raw.fragment_mediacodec);
+        programId_mediacodec = QShaderUtils.createProgram(vertexShader, fragmentShader);
         aPositionHandle_mediacodec= GLES20.glGetAttribLocation(programId_mediacodec,"av_Position");
         aTextureCoordHandle_mediacodec = GLES20.glGetAttribLocation(programId_mediacodec,"af_Position");
         uTextureSamplerHandle_mediacodec = GLES20.glGetUniformLocation(programId_mediacodec,"sTexture");
@@ -198,7 +194,7 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 
         textureid_mediacodec = textures[0];
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureid_mediacodec);
-        WlShaderUtils.checkGlError("glBindTexture mTextureID");
+        QShaderUtils.checkGlError("glBindTexture mTextureID");
 
         GLES20.glTexParameterf(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
                 GLES20.GL_NEAREST);
@@ -207,9 +203,9 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
         surfaceTexture = new SurfaceTexture(textureid_mediacodec);
         surfaceTexture.setOnFrameAvailableListener(this);
         surface = new Surface(surfaceTexture);
-        if(wlOnGlSurfaceViewOncreateListener != null)
+        if(onGlSurfaceViewOncreateListener != null)
         {
-            wlOnGlSurfaceViewOncreateListener.onGlSurfaceViewOncreate(surface);
+            onGlSurfaceViewOncreateListener.onGlSurfaceViewOncreate(surface);
         }
     }
 
@@ -235,9 +231,9 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 
     private void initYuvShader()
     {
-        String vertexShader = WlShaderUtils.readRawTextFile(context, R.raw.vertex_base);
-        String fragmentShader = WlShaderUtils.readRawTextFile(context, R.raw.fragment_yuv);
-        programId_yuv = WlShaderUtils.createProgram(vertexShader, fragmentShader);
+        String vertexShader = QShaderUtils.readRawTextFile(context, R.raw.vertex_base);
+        String fragmentShader = QShaderUtils.readRawTextFile(context, R.raw.fragment_yuv);
+        programId_yuv = QShaderUtils.createProgram(vertexShader, fragmentShader);
         aPositionHandle_yuv= GLES20.glGetAttribLocation(programId_yuv,"av_Position");
         aTextureCoordHandle_yuv = GLES20.glGetAttribLocation(programId_yuv,"af_Position");
 
@@ -272,7 +268,7 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
             GLES20.glEnableVertexAttribArray(aTextureCoordHandle_yuv);
             GLES20.glVertexAttribPointer(aTextureCoordHandle_yuv,2, GLES20.GL_FLOAT,false,8, textureBuffer);
 
-            MyLog.d("renderFFmcodec");
+            LogUtil.d("renderFFmcodec");
             //使 GL_TEXTURE0 单元 活跃 opengl最多支持16个纹理
             //纹理单元是显卡中所有的可用于在shader中进行纹理采样的显存 数量与显卡类型相关，至少16个
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
@@ -306,9 +302,9 @@ public class WlGlRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFram
 
     private void initStop()
     {
-        String vertexShader = WlShaderUtils.readRawTextFile(context, R.raw.vertex_base);
-        String fragmentShader = WlShaderUtils.readRawTextFile(context, R.raw.fragment_no);
-        programId_stop = WlShaderUtils.createProgram(vertexShader, fragmentShader);
+        String vertexShader = QShaderUtils.readRawTextFile(context, R.raw.vertex_base);
+        String fragmentShader = QShaderUtils.readRawTextFile(context, R.raw.fragment_no);
+        programId_stop = QShaderUtils.createProgram(vertexShader, fragmentShader);
         aPositionHandle_stop= GLES20.glGetAttribLocation(programId_stop,"av_Position");
         aTextureCoordHandle_stop = GLES20.glGetAttribLocation(programId_stop,"af_Position");
     }

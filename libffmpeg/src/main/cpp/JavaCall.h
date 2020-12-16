@@ -1,16 +1,14 @@
-//
-// Created by ywl on 2017-12-1.
-//
 
-#ifndef WLPLAYER_WLLISTENER_H
-#define WLPLAYER_WLLISTENER_H
+
+#ifndef QPLAYER_JAVACALL_H
+#define QPLAYER_JAVACALL_H
 
 #include <jni.h>
 #include <stdint.h>
-#include "WlStataus.h"
+#include "Constants.h"
 
 
-class WlJavaCall {
+class JavaCall {
 
 public:
     _JavaVM *javaVM = NULL;
@@ -27,8 +25,8 @@ public:
     jobject jobj;
 
 public:
-    WlJavaCall(_JavaVM *javaVM, JNIEnv *env, jobject *jobj);
-    ~WlJavaCall();
+    JavaCall(_JavaVM *javaVM, JNIEnv *env, jobject *jobj);
+    ~JavaCall();
     void onError(int type, int code, const char *msg);
     void onLoad(int type, bool load);
     void onParpared(int type);
@@ -50,4 +48,4 @@ public:
 };
 
 
-#endif //WLPLAYER_WLLISTENER_H
+#endif //QPLAYER_JAVACALL_H

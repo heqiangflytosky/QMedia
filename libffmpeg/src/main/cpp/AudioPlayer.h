@@ -1,16 +1,14 @@
-//
-// Created by ywl on 2017-12-3.
-//
+
 #pragma once
-#ifndef WLPLAYER_WLAUDIO_H
-#define WLPLAYER_WLAUDIO_H
+#ifndef QPLAYER_AUDIO_H
+#define QPLAYER_AUDIO_H
 
 
-#include "WlBasePlayer.h"
-#include "WlQueue.h"
+#include "BasePlayer.h"
+#include "QQueue.h"
 #include "AndroidLog.h"
-#include "WlPlayStatus.h"
-#include "WlJavaCall.h"
+#include "PlayStatus.h"
+#include "JavaCall.h"
 
 extern "C"
 {
@@ -20,12 +18,12 @@ extern "C"
 #include <SLES/OpenSLES_Android.h>
 };
 class WlOpenSLES;
-class WlAudio : public WlBasePlayer{
+class AudioPlayer : public BasePlayer{
 
 public:
-    WlQueue *queue = NULL;
-    WlPlayStatus *wlPlayStatus = NULL;
-    WlJavaCall *wljavaCall = NULL;
+    QQueue *queue = NULL;
+    PlayStatus *pPlayStatus = NULL;
+    JavaCall *pJavaCall = NULL;
     pthread_t audioThread;
 
     int ret = 0;//函数调用返回结果
@@ -64,8 +62,8 @@ public:
     //缓冲器队列接口
     SLAndroidSimpleBufferQueueItf pcmBufferQueue = NULL;
 public:
-    WlAudio(WlPlayStatus *playStatus, WlJavaCall *javaCall);
-    ~WlAudio();
+    AudioPlayer(PlayStatus *playStatus, JavaCall *javaCall);
+    ~AudioPlayer();
 
     void setVideo(bool video);
 
@@ -82,4 +80,4 @@ public:
 };
 
 
-#endif //WLPLAYER_WLAUDIO_H
+#endif //QPLAYER_AUDIO_H

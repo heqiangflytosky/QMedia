@@ -9,15 +9,15 @@ add_library( # Specifies the name of the library.
         # Sets the library as a shared library.
         SHARED
         # Provides a relative path to your source file(s).
-        src/main/cpp/wlplayer.cpp
-        src/main/cpp/WlAudio.cpp
-        src/main/cpp/WlAudioChannel.cpp
-        src/main/cpp/WlBasePlayer.cpp
-        src/main/cpp/WlFFmpeg.cpp
-        src/main/cpp/WlJavaCall.cpp
-        src/main/cpp/WlPlayStatus.cpp
-        src/main/cpp/WlQueue.cpp
-        src/main/cpp/WlVideo.cpp)
+        src/main/cpp/qplayer.cpp
+        src/main/cpp/AudioPlayer.cpp
+        src/main/cpp/AudioChannel.cpp
+        src/main/cpp/BasePlayer.cpp
+        src/main/cpp/FFmpeg.cpp
+        src/main/cpp/JavaCall.cpp
+        src/main/cpp/PlayStatus.cpp
+        src/main/cpp/QQueue.cpp
+        src/main/cpp/VideoPlayer.cpp)
 
 #添加libavcodec-57.so
 add_library( avcodec-57

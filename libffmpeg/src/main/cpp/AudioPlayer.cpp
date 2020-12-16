@@ -1,60 +1,42 @@
-//
-// Created by ywl on 2017-12-3.
-//
 
-#include "WlAudio.h"
 
-WlAudio::WlAudio(WlPlayStatus *playStatus, WlJavaCall *javaCall) {
+#include "AudioPlayer.h"
+
+AudioPlayer::AudioPlayer(PlayStatus *playStatus, JavaCall *javaCall) {
     streamIndex = -1;
     out_buffer = (uint8_t *) malloc(sample_rate * 2 * 2 * 2 / 3);
-    queue = new WlQueue(playStatus);
-    wlPlayStatus = playStatus;
-    wljavaCall = javaCall;
+    queue = new QQueue(playStatus);
+    pPlayStatus = playStatus;
+    pJavaCall = javaCall;
     dst_format = AV_SAMPLE_FMT_S16;
 }
 
-WlAudio::~WlAudio() {
-    if(LOG_SHOW)
-    {
-        LOGE("~WlAudio() 释放完了");
-    }
+AudioPlayer::~AudioPlayer() {
+    LOGE("AudioPlayerayer() 释放完了");
 
 }
 
-void WlAudio::realease() {
-    if(LOG_SHOW)
-    {
-        LOGE("开始释放 audio...");
-    }
+void AudioPlayer::realease() {
+    LOGE("开始释放 audio...");
     pause();
-    if(queue != NULL)
-    {
+    if(queue != NULL){
         queue->noticeThread();
     }
     int count = 0;
-    while(!isExit)
-    {
-        if(LOG_SHOW)
-        {
-            LOGE("等待缓冲线程结束...%d", count);
-        }
-        if(count > 1000)
-        {
+    while(!isExit){
+        LOGE("等待缓冲线程结束...%d", count);
+        if(count > 1000){
             isExit = true;
         }
         count++;
         av_usleep(1000 * 10);
     }
-    if(queue != NULL)
-    {
+    if(queue != NULL){
         queue->release();
         delete(queue);
         queue = NULL;
     }
-    if(LOG_SHOW)
-    {
-        LOGE("释放 opensl es start");
-    }
+    LOGE("释放 opensl es start");
     if (pcmPlayerObject != NULL) {
         (*pcmPlayerObject)->Destroy(pcmPlayerObject);
         pcmPlayerObject = NULL;
@@ -64,10 +46,7 @@ void WlAudio::realease() {
         buffer = NULL;
         pcmsize = 0;
     }
-    if(LOG_SHOW)
-    {
-        LOGE("释放 opensl es end 1");
-    }
+    LOGE("释放 opensl es end 1");
     // destroy output mix object, and invalidate all associated interfaces
     if (outputMixObject != NULL) {
         (*outputMixObject)->Destroy(outputMixObject);
@@ -75,10 +54,7 @@ void WlAudio::realease() {
         outputMixEnvironmentalReverb = NULL;
     }
 
-    if(LOG_SHOW)
-    {
-        LOGE("释放 opensl es end 2");
-    }
+    LOGE("释放 opensl es end 2");
 
     // destroy engine object, and invalidate all associated interfaces
     if (engineObject != NULL) {
@@ -86,93 +62,79 @@ void WlAudio::realease() {
         engineObject = NULL;
         engineEngine = NULL;
     }
-    if(LOG_SHOW)
-    {
-        LOGE("释放 opensl es end");
-    }
+    LOGE("释放 opensl es end");
 
 
-    if(out_buffer != NULL)
-    {
+    if(out_buffer != NULL){
         free(out_buffer);
         out_buffer = NULL;
     }
-    if(buffer != NULL)
-    {
+    if(buffer != NULL){
         free(buffer);
         buffer = NULL;
     }
-    if(avCodecContext != NULL)
-    {
-        avcodec_close(avCodecContext);
-        avcodec_free_context(&avCodecContext);
-        avCodecContext = NULL;
+    if(pAVCodecContext != NULL){
+        avcodec_close(pAVCodecContext);
+        avcodec_free_context(&pAVCodecContext);
+        pAVCodecContext = NULL;
     }
-    if(wlPlayStatus != NULL)
-    {
-        wlPlayStatus = NULL;
+    if(pPlayStatus != NULL){
+        pPlayStatus = NULL;
     }
 
 }
 
-void *audioPlayThread(void *context)
-{
-    WlAudio *audio = (WlAudio *) context;
+void *audioPlayThread(void *context){
+    AudioPlayer *audio = (AudioPlayer *) context;
     audio->initOpenSL();
     pthread_exit(&audio->audioThread);
 }
 
-void WlAudio::playAudio() {
+void AudioPlayer::playAudio() {
     pthread_create(&audioThread, NULL, audioPlayThread, this);
 }
 
-int WlAudio::getPcmData(void **pcm) {
-    while(!wlPlayStatus->exit) {
+int AudioPlayer::getPcmData(void **pcm) {
+    while(!pPlayStatus->exit) {
         isExit = false;
 
-        if(wlPlayStatus->pause)//暂停
-        {
+        //暂停
+        if(pPlayStatus->pause){
             av_usleep(1000 * 100);
             continue;
         }
-        if(wlPlayStatus->seek)
-        {
-            wljavaCall->onLoad(WL_THREAD_CHILD, true);
-            wlPlayStatus->load = true;
+        if(pPlayStatus->seek){
+            pJavaCall->onLoad(THREAD_CHILD, true);
+            pPlayStatus->load = true;
             isReadPacketFinish = true;
             continue;
         }
-        if(!isVideo)
-        {
-            if(queue->getAvPacketSize() == 0)//加载
-            {
-                if(!wlPlayStatus->load)
-                {
-                    wljavaCall->onLoad(WL_THREAD_CHILD, true);
-                    wlPlayStatus->load = true;
+        if(!isVideo){
+            //加载
+            if(queue->getAvPacketSize() == 0){
+                if(!pPlayStatus->load){
+                    pJavaCall->onLoad(THREAD_CHILD, true);
+                    pPlayStatus->load = true;
                 }
                 continue;
             } else{
-                if(wlPlayStatus->load)
-                {
-                    wljavaCall->onLoad(WL_THREAD_CHILD, false);
-                    wlPlayStatus->load = false;
+                if(pPlayStatus->load){
+                    pJavaCall->onLoad(THREAD_CHILD, false);
+                    pPlayStatus->load = false;
                 }
             }
         }
-        if(isReadPacketFinish)
-        {
+        if(isReadPacketFinish){
             isReadPacketFinish = false;
             packet = av_packet_alloc();
-            if(queue->getAvpacket(packet) != 0)
-            {
+            if(queue->getAvpacket(packet) != 0){
                 av_packet_free(&packet);
                 av_free(packet);
                 packet = NULL;
                 isReadPacketFinish = true;
                 continue;
             }
-            ret = avcodec_send_packet(avCodecContext, packet);
+            ret = avcodec_send_packet(pAVCodecContext, packet);
             if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF) {
                 av_packet_free(&packet);
                 av_free(packet);
@@ -183,8 +145,7 @@ int WlAudio::getPcmData(void **pcm) {
         }
 
         AVFrame *frame = av_frame_alloc();
-        if(avcodec_receive_frame(avCodecContext, frame) == 0)
-        {
+        if(avcodec_receive_frame(pAVCodecContext, frame) == 0){
             // 设置通道数或channel_layout
             if (frame->channels > 0 && frame->channel_layout == 0)
                 frame->channel_layout = av_get_default_channel_layout(frame->channels);
@@ -221,8 +182,7 @@ int WlAudio::getPcmData(void **pcm) {
             out_channels = av_get_channel_layout_nb_channels(dst_layout);
             data_size = out_channels * nb * av_get_bytes_per_sample(dst_format);
             now_time = frame->pts * av_q2d(time_base);
-            if(now_time < clock)
-            {
+            if(now_time < clock){
                 now_time = clock;
             }
             clock = now_time;
@@ -232,8 +192,7 @@ int WlAudio::getPcmData(void **pcm) {
             swr_free(&swr_ctx);
             *pcm = out_buffer;
             break;
-        } else
-        {
+        } else {
             isReadPacketFinish = true;
             av_frame_free(&frame);
             av_free(frame);
@@ -250,28 +209,22 @@ int WlAudio::getPcmData(void **pcm) {
 
 void pcmBufferCallBack(SLAndroidSimpleBufferQueueItf bf, void * context)
 {
-    WlAudio *wlAudio = (WlAudio *) context;
-    if(wlAudio != NULL) {
-        if(LOG_SHOW)
-        {
-            LOGE("pcm call back...");
-        }
-        wlAudio->buffer = NULL;
-        wlAudio->pcmsize = wlAudio->getPcmData(&wlAudio->buffer);
-        if (wlAudio->buffer && wlAudio->pcmsize > 0) {
-            wlAudio->clock += wlAudio->pcmsize / ((double)(wlAudio->sample_rate * 2 * 2));
-            wlAudio->wljavaCall->onVideoInfo(WL_THREAD_CHILD, wlAudio->clock, wlAudio->duration);
-            (*wlAudio->pcmBufferQueue)->Enqueue(wlAudio->pcmBufferQueue, wlAudio->buffer,
-                                                wlAudio->pcmsize);
+    AudioPlayer *audioPlayer = (AudioPlayer *) context;
+    if(audioPlayer != NULL) {
+        LOGD("pcm call back...");
+        audioPlayer->buffer = NULL;
+        audioPlayer->pcmsize = audioPlayer->getPcmData(&audioPlayer->buffer);
+        if (audioPlayer->buffer && audioPlayer->pcmsize > 0) {
+            audioPlayer->clock += audioPlayer->pcmsize / ((double)(audioPlayer->sample_rate * 2 * 2));
+            audioPlayer->pJavaCall->onVideoInfo(THREAD_CHILD, audioPlayer->clock, audioPlayer->duration);
+            (*audioPlayer->pcmBufferQueue)->Enqueue(audioPlayer->pcmBufferQueue, audioPlayer->buffer,
+                                                audioPlayer->pcmsize);
         }
     }
 }
 
-int WlAudio::initOpenSL() {
-    if(LOG_SHOW)
-    {
-        LOGD("initopensl");
-    }
+int AudioPlayer::initOpenSL() {
+    LOGD("initopensl");
     SLresult result;
     result = slCreateEngine(&engineObject, 0, 0, 0, 0, 0);
     result = (*engineObject)->Realize(engineObject, SL_BOOLEAN_FALSE);
@@ -329,16 +282,12 @@ int WlAudio::initOpenSL() {
 //    获取播放状态接口
     (*pcmPlayerPlay)->SetPlayState(pcmPlayerPlay, SL_PLAYSTATE_PLAYING);
     pcmBufferCallBack(pcmBufferQueue, this);
-    if(LOG_SHOW)
-    {
-        LOGE("initopensl 2");
-    }
+    LOGD("initopensl 2");
     return 0;
 }
 
-int WlAudio::getSLSampleRate() {
-    switch (sample_rate)
-    {
+int AudioPlayer::getSLSampleRate() {
+    switch (sample_rate){
         case 8000:
             return SL_SAMPLINGRATE_8;
         case 11025:
@@ -370,26 +319,24 @@ int WlAudio::getSLSampleRate() {
     }
 }
 
-void WlAudio::pause() {
-    if(pcmPlayerPlay != NULL)
-    {
+void AudioPlayer::pause() {
+    if(pcmPlayerPlay != NULL){
         (*pcmPlayerPlay)->SetPlayState(pcmPlayerPlay,  SL_PLAYSTATE_PAUSED);
     }
 
 }
 
-void WlAudio::resume() {
-    if(pcmPlayerPlay != NULL)
-    {
+void AudioPlayer::resume() {
+    if(pcmPlayerPlay != NULL){
         (*pcmPlayerPlay)->SetPlayState(pcmPlayerPlay, SL_PLAYSTATE_PLAYING);
     }
 }
 
-void WlAudio::setVideo(bool video) {
+void AudioPlayer::setVideo(bool video) {
     isVideo = video;
 }
 
-void WlAudio::setClock(int secds) {
+void AudioPlayer::setClock(int secds) {
     now_time = secds;
     clock = secds;
 }

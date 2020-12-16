@@ -1,48 +1,38 @@
-//
-// Created by ywl on 2017-12-3.
-//
 
-#include "WlQueue.h"
+
+#include "QQueue.h"
 #include "AndroidLog.h"
 
-WlQueue::WlQueue(WlPlayStatus *playStatus) {
-    wlPlayStatus = playStatus;
+QQueue::QQueue(PlayStatus *playStatus) {
+    pPlayStatus = playStatus;
     pthread_mutex_init(&mutexPacket, NULL);
     pthread_cond_init(&condPacket, NULL);
     pthread_mutex_init(&mutexFrame, NULL);
     pthread_cond_init(&condFrame, NULL);
 }
 
-WlQueue::~WlQueue() {
-    wlPlayStatus = NULL;
+QQueue::~QQueue() {
+    pPlayStatus = NULL;
     pthread_mutex_destroy(&mutexPacket);
     pthread_cond_destroy(&condPacket);
     pthread_mutex_destroy(&mutexFrame);
     pthread_cond_destroy(&condFrame);
-    if(LOG_SHOW)
-    {
-        LOGE("~WlQueue() 释放完了");
-    }
+    LOGD("QQueue) 释放完了");
 
 }
 
-void WlQueue::release() {
-    if(LOG_SHOW)
-    {
-        LOGE("WlQueue::release");
-    }
+void QQueue::release() {
+    LOGD("QQueue::release");
 
     noticeThread();
     clearAvpacket();
     clearAvFrame();
-    if(LOG_SHOW)
-    {
-        LOGE("WlQueue::release success");
-    }
+
+    LOGE("QQueue::release success");
 
 }
 
-int WlQueue::putAvpacket(AVPacket *avPacket) {
+int QQueue::putAvpacket(AVPacket *avPacket) {
 
     pthread_mutex_lock(&mutexPacket);
     queuePacket.push(avPacket);
@@ -52,11 +42,11 @@ int WlQueue::putAvpacket(AVPacket *avPacket) {
     return 0;
 }
 
-int WlQueue::getAvpacket(AVPacket *avPacket) {
+int QQueue::getAvpacket(AVPacket *avPacket) {
 
     pthread_mutex_lock(&mutexPacket);
 
-    while(wlPlayStatus != NULL && !wlPlayStatus->exit)
+    while(pPlayStatus != NULL && !pPlayStatus->exit)
     {
         if(queuePacket.size() > 0)
         {
@@ -70,7 +60,7 @@ int WlQueue::getAvpacket(AVPacket *avPacket) {
             pkt = NULL;
             break;
         } else{
-            if(!wlPlayStatus->exit)
+            if(!pPlayStatus->exit)
             {
                 pthread_cond_wait(&condPacket, &mutexPacket);
             }
@@ -80,7 +70,7 @@ int WlQueue::getAvpacket(AVPacket *avPacket) {
     return 0;
 }
 
-int WlQueue::clearAvpacket() {
+int QQueue::clearAvpacket() {
 
     pthread_cond_signal(&condPacket);
     pthread_mutex_lock(&mutexPacket);
@@ -97,7 +87,7 @@ int WlQueue::clearAvpacket() {
     return 0;
 }
 
-int WlQueue::getAvPacketSize() {
+int QQueue::getAvPacketSize() {
     int size = 0;
     pthread_mutex_lock(&mutexPacket);
     size = queuePacket.size();
@@ -105,7 +95,7 @@ int WlQueue::getAvPacketSize() {
     return size;
 }
 
-int WlQueue::putAvframe(AVFrame *avFrame) {
+int QQueue::putAvframe(AVFrame *avFrame) {
     pthread_mutex_lock(&mutexFrame);
     queueFrame.push(avFrame);
     pthread_cond_signal(&condFrame);
@@ -113,10 +103,10 @@ int WlQueue::putAvframe(AVFrame *avFrame) {
     return 0;
 }
 
-int WlQueue::getAvframe(AVFrame *avFrame) {
+int QQueue::getAvframe(AVFrame *avFrame) {
     pthread_mutex_lock(&mutexFrame);
 
-    while(wlPlayStatus != NULL && !wlPlayStatus->exit)
+    while(pPlayStatus != NULL && !pPlayStatus->exit)
     {
         if(queueFrame.size() > 0)
         {
@@ -130,7 +120,7 @@ int WlQueue::getAvframe(AVFrame *avFrame) {
             frame = NULL;
             break;
         } else{
-            if(!wlPlayStatus->exit)
+            if(!pPlayStatus->exit)
             {
                 pthread_cond_wait(&condFrame, &mutexFrame);
             }
@@ -140,7 +130,7 @@ int WlQueue::getAvframe(AVFrame *avFrame) {
     return 0;
 }
 
-int WlQueue::clearAvFrame() {
+int QQueue::clearAvFrame() {
     pthread_cond_signal(&condFrame);
     pthread_mutex_lock(&mutexFrame);
     while (!queueFrame.empty())
@@ -155,7 +145,7 @@ int WlQueue::clearAvFrame() {
     return 0;
 }
 
-int WlQueue::getAvFrameSize() {
+int QQueue::getAvFrameSize() {
     int size = 0;
     pthread_mutex_lock(&mutexFrame);
     size = queueFrame.size();
@@ -163,13 +153,13 @@ int WlQueue::getAvFrameSize() {
     return size;
 }
 
-int WlQueue::noticeThread() {
+int QQueue::noticeThread() {
     pthread_cond_signal(&condFrame);
     pthread_cond_signal(&condPacket);
     return 0;
 }
 
-int WlQueue::clearToKeyFrame() {
+int QQueue::clearToKeyFrame() {
     pthread_cond_signal(&condPacket);
     pthread_mutex_lock(&mutexPacket);
     while (!queuePacket.empty())

@@ -6,10 +6,10 @@ import android.os.Environment
 import android.util.Log
 import android.view.View
 import com.android.hq.qmedia.ffmpeglib.QPlayer
-import com.android.hq.qmedia.ffmpeglib.WlGlSurfaceView
+import com.android.hq.qmedia.ffmpeglib.QGLSurfaceView
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var surfaceview: WlGlSurfaceView
+    private lateinit var surfaceview: QGLSurfaceView
     private lateinit var player:QPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -18,8 +18,8 @@ class MainActivity : AppCompatActivity() {
         surfaceview = findViewById(R.id.surface)
 
         player = QPlayer()
-        player.setWlGlSurfaceView(surfaceview)
-        player.setWlOnPreparedListener{
+        player.setQGLSurfaceView(surfaceview)
+        player.setOnPreparedListener{
             surfaceview.post {
                 Utils.updateVideoSize(this,surfaceview,player.videoWidth,player.videoHeight,surfaceview.width,surfaceview.height)
             }

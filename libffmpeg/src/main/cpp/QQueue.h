@@ -1,12 +1,10 @@
-//
-// Created by ywl on 2017-12-3.
-//
 
-#ifndef WLPLAYER_QUEUE_H
-#define WLPLAYER_QUEUE_H
+
+#ifndef QPLAYER_QUEUE_H
+#define QPLAYER_QUEUE_H
 
 #include "queue"
-#include "WlPlayStatus.h"
+#include "PlayStatus.h"
 
 extern "C"
 {
@@ -14,7 +12,7 @@ extern "C"
 #include "pthread.h"
 };
 
-class WlQueue {
+class QQueue {
 
 public:
     std::queue<AVPacket*> queuePacket;
@@ -23,11 +21,11 @@ public:
     pthread_cond_t condFrame;
     pthread_mutex_t mutexPacket;
     pthread_cond_t condPacket;
-    WlPlayStatus *wlPlayStatus = NULL;
+    PlayStatus *pPlayStatus = NULL;
 
 public:
-    WlQueue(WlPlayStatus *playStatus);
-    ~WlQueue();
+    QQueue(PlayStatus *playStatus);
+    ~QQueue();
     int putAvpacket(AVPacket *avPacket);
     int getAvpacket(AVPacket *avPacket);
     int clearAvpacket();
@@ -45,4 +43,4 @@ public:
 };
 
 
-#endif //WLPLAYER_QUEUE_H
+#endif //QPLAYER_QUEUE_H

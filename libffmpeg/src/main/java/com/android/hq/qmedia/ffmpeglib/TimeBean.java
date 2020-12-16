@@ -1,10 +1,6 @@
 package com.android.hq.qmedia.ffmpeglib;
 
-/**
- * Created by ywl on 2017-12-22.
- */
-
-public class WlTimeBean {
+public class TimeBean {
 
     private int currt_secds;
     private int total_secds;

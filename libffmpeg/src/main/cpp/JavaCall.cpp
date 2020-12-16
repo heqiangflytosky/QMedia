@@ -1,20 +1,17 @@
-//
-// Created by ywl on 2017-12-1.
-//
+
 
 #include <libavutil/mem.h>
-#include "WlJavaCall.h"
+#include "JavaCall.h"
 #include "AndroidLog.h"
 
-WlJavaCall::WlJavaCall(_JavaVM *vm, JNIEnv *env, jobject *obj) {
+JavaCall::JavaCall(_JavaVM *vm, JNIEnv *env, jobject *obj) {
     javaVM = vm;
     jniEnv = env;
     jobj = *obj;
     jobj = env->NewGlobalRef(jobj);
     jclass  jlz = jniEnv->GetObjectClass(jobj);
-    if(!jlz)
-    {
-//        LOGE("find jclass faild");
+    if(!jlz){
+        LOGE("find jclass faild");
         return;
     }
     jmid_error = jniEnv->GetMethodID(jlz, "onError", "(ILjava/lang/String;)V");
@@ -28,17 +25,15 @@ WlJavaCall::WlJavaCall(_JavaVM *vm, JNIEnv *env, jobject *obj) {
     jmid_onlysoft = jniEnv->GetMethodID(jlz, "isOnlySoft", "()Z");
 }
 
-WlJavaCall::~WlJavaCall() {
-//    LOGE("WlJavaCall()");
+JavaCall::~JavaCall() {
+    LOGD("~JavaCall()");
 }
 
-void WlJavaCall::onError(int type, int code, const char *msg) {
-    if(type == WL_THREAD_CHILD)
-    {
+void JavaCall::onError(int type, int code, const char *msg) {
+    if(type == THREAD_CHILD){
         JNIEnv *jniEnv;
-        if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK)
-        {
-//            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
+        if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK){
+            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
             return;
         }
         jstring jmsg = jniEnv->NewStringUTF(msg);
@@ -46,69 +41,59 @@ void WlJavaCall::onError(int type, int code, const char *msg) {
         jniEnv->DeleteLocalRef(jmsg);
         javaVM->DetachCurrentThread();
     }
-    else
-    {
+    else{
         jstring jmsg = jniEnv->NewStringUTF(msg);
         jniEnv->CallVoidMethod(jobj, jmid_error, code, jmsg);
         jniEnv->DeleteLocalRef(jmsg);
     }
 }
 
-void WlJavaCall::release() {
-    if(javaVM != NULL)
-    {
+void JavaCall::release() {
+    if(javaVM != NULL){
         javaVM = NULL;
     }
-    if(jniEnv != NULL)
-    {
+    if(jniEnv != NULL){
         jniEnv = NULL;
     }
 }
 
-void WlJavaCall::onLoad(int type, bool load) {
-    if(type == WL_THREAD_CHILD)
-    {
+void JavaCall::onLoad(int type, bool load) {
+    if(type == THREAD_CHILD){
         JNIEnv *jniEnv;
-        if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK)
-        {
-//            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
+        if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK){
+            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
             return;
         }
         jniEnv->CallVoidMethod(jobj, jmid_load, load);
         javaVM->DetachCurrentThread();
-    }
-    else
-    {
+    }else{
         jniEnv->CallVoidMethod(jobj, jmid_load, load);
     }
 }
 
-void WlJavaCall::onParpared(int type) {
-    if(type == WL_THREAD_CHILD)
-    {
+void JavaCall::onParpared(int type) {
+    if(type == THREAD_CHILD){
         JNIEnv *jniEnv;
         if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK)
         {
-//            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
+            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
             return;
         }
         jniEnv->CallVoidMethod(jobj, jmid_parpared);
         javaVM->DetachCurrentThread();
     }
-    else
-    {
+    else{
         jniEnv->CallVoidMethod(jobj, jmid_parpared);
     }
 }
 
-void WlJavaCall::onInitMediacodec(int type, int mimetype, int width, int height, int csd_0_size, int csd_1_size, uint8_t *csd_0, uint8_t *csd_1) {
+void JavaCall::onInitMediacodec(int type, int mimetype, int width, int height, int csd_0_size, int csd_1_size, uint8_t *csd_0, uint8_t *csd_1) {
 
-    if(type == WL_THREAD_CHILD)
-    {
+    if(type == THREAD_CHILD){
         JNIEnv *jniEnv;
         if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK)
         {
-//            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
+            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
             return;
         }
         jbyteArray csd0 = jniEnv->NewByteArray(csd_0_size);
@@ -122,8 +107,7 @@ void WlJavaCall::onInitMediacodec(int type, int mimetype, int width, int height,
         jniEnv->DeleteLocalRef(csd1);
         javaVM->DetachCurrentThread();
     }
-    else
-    {
+    else{
         jbyteArray csd0 = jniEnv->NewByteArray(csd_0_size);
         jniEnv->SetByteArrayRegion(csd0, 0, csd_0_size, (jbyte*)csd_0);
         jbyteArray csd1 = jniEnv->NewByteArray(csd_1_size);
@@ -137,13 +121,12 @@ void WlJavaCall::onInitMediacodec(int type, int mimetype, int width, int height,
 
 }
 
-void WlJavaCall::onDecMediacodec(int type, int size, uint8_t *packet_data, int pts) {
-    if(type == WL_THREAD_CHILD)
-    {
+void JavaCall::onDecMediacodec(int type, int size, uint8_t *packet_data, int pts) {
+    if(type == THREAD_CHILD){
         JNIEnv *jniEnv;
         if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK)
         {
-//            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
+            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
             return;
         }
         jbyteArray data = jniEnv->NewByteArray(size);
@@ -151,9 +134,7 @@ void WlJavaCall::onDecMediacodec(int type, int size, uint8_t *packet_data, int p
         jniEnv->CallVoidMethod(jobj, jmid_dec_mediacodec, data, size, pts);
         jniEnv->DeleteLocalRef(data);
         javaVM->DetachCurrentThread();
-    }
-    else
-    {
+    }else{
         jbyteArray data = jniEnv->NewByteArray(size);
         jniEnv->SetByteArrayRegion(data, 0, size, (jbyte*)data);
         jniEnv->CallVoidMethod(jobj, jmid_dec_mediacodec, data, size, pts);
@@ -162,13 +143,11 @@ void WlJavaCall::onDecMediacodec(int type, int size, uint8_t *packet_data, int p
 }
 
 void
-WlJavaCall::onGlRenderYuv(int type, int width, int height, uint8_t *fy, uint8_t *fu, uint8_t *fv) {
-    if(type == WL_THREAD_CHILD)
-    {
+JavaCall::onGlRenderYuv(int type, int width, int height, uint8_t *fy, uint8_t *fu, uint8_t *fv) {
+    if(type == THREAD_CHILD){
         JNIEnv *jniEnv;
-        if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK)
-        {
-//            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
+        if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK){
+            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
             return;
         }
 
@@ -188,8 +167,7 @@ WlJavaCall::onGlRenderYuv(int type, int width, int height, uint8_t *fy, uint8_t 
 
         javaVM->DetachCurrentThread();
     }
-    else
-    {
+    else{
         jbyteArray y = jniEnv->NewByteArray(width * height);
         jniEnv->SetByteArrayRegion(y, 0, width * height, (jbyte*)y);
 
@@ -206,46 +184,40 @@ WlJavaCall::onGlRenderYuv(int type, int width, int height, uint8_t *fy, uint8_t 
     }
 }
 
-void WlJavaCall::onVideoInfo(int type, int currt_secd, int total_secd) {
-    if(type == WL_THREAD_CHILD)
-    {
+void JavaCall::onVideoInfo(int type, int currt_secd, int total_secd) {
+    if(type == THREAD_CHILD){
         JNIEnv *jniEnv;
         if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK)
         {
-//            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
+            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
             return;
         }
         jniEnv->CallVoidMethod(jobj, jmid_info, currt_secd, total_secd);
         javaVM->DetachCurrentThread();
     }
-    else
-    {
+    else{
         jniEnv->CallVoidMethod(jobj, jmid_info, currt_secd, total_secd);
     }
 }
 
-void WlJavaCall::onComplete(int type) {
-    if(type == WL_THREAD_CHILD)
-    {
+void JavaCall::onComplete(int type) {
+    if(type == THREAD_CHILD){
         JNIEnv *jniEnv;
-        if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK)
-        {
-//            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
+        if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK){
+            LOGE("%s: AttachCurrentThread() failed", __FUNCTION__);
             return;
         }
         jniEnv->CallVoidMethod(jobj, jmid_complete);
 //        javaVM->DetachCurrentThread();
     }
-    else
-    {
+    else{
         jniEnv->CallVoidMethod(jobj, jmid_complete);
     }
 }
 
-bool WlJavaCall::isOnlySoft(int type) {
+bool JavaCall::isOnlySoft(int type) {
     bool soft = false;
-    if(type == WL_THREAD_CHILD)
-    {
+    if(type == THREAD_CHILD){
         JNIEnv *jniEnv;
         if(javaVM->AttachCurrentThread(&jniEnv, 0) != JNI_OK)
         {
@@ -253,8 +225,7 @@ bool WlJavaCall::isOnlySoft(int type) {
         soft = jniEnv->CallBooleanMethod(jobj, jmid_onlysoft);
         javaVM->DetachCurrentThread();
     }
-    else
-    {
+    else{
         soft = jniEnv->CallBooleanMethod(jobj, jmid_onlysoft);
     }
     return soft;

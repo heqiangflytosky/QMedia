@@ -42,7 +42,7 @@ public class QPlayer {
     /**
      * opengl surfaceview
      */
-    private WlGlSurfaceView wlGlSurfaceView;
+    private QGLSurfaceView QGLSurfaceView;
     /**
      * 视频解码器info
      */
@@ -51,31 +51,31 @@ public class QPlayer {
     /**
      * 准备好时的回调
      */
-    private WlOnPreparedListener wlOnPreparedListener;
+    private QMediaPlayer.OnPreparedListener onPreparedListener;
     /**
      * 错误时的回调
      */
-    private WlOnErrorListener wlOnErrorListener;
+    private QMediaPlayer.OnErrorListener onErrorListener;
     /**
      * 加载回调
      */
-    private WlOnLoadListener wlOnLoadListener;
+    private QMediaPlayer.OnLoadListener onLoadListener;
     /**
      * 更新时间回调
      */
-    private WlOnInfoListener wlOnInfoListener;
+    private QMediaPlayer.OnInfoListener onInfoListener;
     /**
      * 播放完成回调
      */
-    private WlOnCompleteListener wlOnCompleteListener;
+    private QMediaPlayer.OnCompleteListener onCompleteListener;
     /**
      * 视频截图回调
      */
-    private WlOnCutVideoImgListener wlOnCutVideoImgListener;
+    private QMediaPlayer.OnCutVideoImgListener onCutVideoImgListener;
     /**
      * 停止完成回调
      */
-    private WlOnStopListener wlOnStopListener;
+    private QMediaPlayer.OnStopListener onStopListener;
     /**
      * 是否已经准备好
      */
@@ -83,7 +83,7 @@ public class QPlayer {
     /**
      * 时长实体类
      */
-    private WlTimeBean wlTimeBean;
+    private TimeBean timeBean;
     /**
      * 上一次播放时间
      */
@@ -98,7 +98,7 @@ public class QPlayer {
 
     public QPlayer()
     {
-        wlTimeBean = new WlTimeBean();
+        timeBean = new TimeBean();
     }
 
     public void setDataSource(String dataSource) {
@@ -113,9 +113,9 @@ public class QPlayer {
         this.surface = surface;
     }
 
-    public void setWlGlSurfaceView(WlGlSurfaceView wlGlSurfaceView) {
-        this.wlGlSurfaceView = wlGlSurfaceView;
-        wlGlSurfaceView.setOnGlSurfaceViewOncreateListener(new WlOnGlSurfaceViewOncreateListener() {
+    public void setQGLSurfaceView(QGLSurfaceView QGLSurfaceView) {
+        this.QGLSurfaceView = QGLSurfaceView;
+        QGLSurfaceView.setOnGlSurfaceViewOncreateListener(new QMediaPlayer.OnGlSurfaceViewOnCreateListener() {
             @Override
             public void onGlSurfaceViewOncreate(Surface s) {
                 if(surface == null)
@@ -130,9 +130,9 @@ public class QPlayer {
 
             @Override
             public void onCutVideoImg(Bitmap bitmap) {
-                if(wlOnCutVideoImgListener != null)
+                if(onCutVideoImgListener != null)
                 {
-                    wlOnCutVideoImgListener.onCutVideoImg(bitmap);
+                    onCutVideoImgListener.onCutVideoImg(bitmap);
                 }
             }
         });
@@ -230,21 +230,21 @@ public class QPlayer {
 
 
 
-    public void setWlOnPreparedListener(WlOnPreparedListener wlOnPreparedListener) {
-        this.wlOnPreparedListener = wlOnPreparedListener;
+    public void setOnPreparedListener(QMediaPlayer.OnPreparedListener onPreparedListener) {
+        this.onPreparedListener = onPreparedListener;
     }
 
 
 
-    public void setWlOnErrorListener(WlOnErrorListener wlOnErrorListener) {
-        this.wlOnErrorListener = wlOnErrorListener;
+    public void setOnErrorListener(QMediaPlayer.OnErrorListener onErrorListener) {
+        this.onErrorListener = onErrorListener;
     }
 
     public void prepared()
     {
         if(TextUtils.isEmpty(dataSource))
         {
-            onError(WlStatus.WL_STATUS_DATASOURCE_NULL, "datasource is null");
+            onError(Status.WL_STATUS_DATASOURCE_NULL, "datasource is null");
             return;
         }
         parpared = true;
@@ -268,21 +268,21 @@ public class QPlayer {
             public void run() {
                 if(TextUtils.isEmpty(dataSource))
                 {
-                    onError(WlStatus.WL_STATUS_DATASOURCE_NULL, "datasource is null");
+                    onError(Status.WL_STATUS_DATASOURCE_NULL, "datasource is null");
                     return;
                 }
                 if(!isOnlyMusic)
                 {
                     if(surface == null)
                     {
-                        onError(WlStatus.WL_STATUS_SURFACE_NULL, "surface is null");
+                        onError(Status.WL_STATUS_SURFACE_NULL, "surface is null");
                         return;
                     }
                 }
 
-                if(wlTimeBean == null)
+                if(timeBean == null)
                 {
-                    wlTimeBean = new WlTimeBean();
+                    timeBean = new TimeBean();
                 }
                 wlStart();
             }
@@ -310,10 +310,10 @@ public class QPlayer {
                     mediaCodec = null;
                     mediaFormat = null;
                 }
-                if(wlGlSurfaceView != null)
+                if(QGLSurfaceView != null)
                 {
-                    wlGlSurfaceView.setCodecType(-1);
-                    wlGlSurfaceView.requestRender();
+                    QGLSurfaceView.setCodecType(-1);
+                    QGLSurfaceView.requestRender();
                 }
 
             }
@@ -356,26 +356,26 @@ public class QPlayer {
 
     private void onLoad(boolean load)
     {
-        if(wlOnLoadListener != null)
+        if(onLoadListener != null)
         {
-            wlOnLoadListener.onLoad(load);
+            onLoadListener.onLoad(load);
         }
     }
 
     private void onError(int code, String msg)
     {
-        if(wlOnErrorListener != null)
+        if(onErrorListener != null)
         {
-            wlOnErrorListener.onError(code, msg);
+            onErrorListener.onError(code, msg);
         }
         stop(true);
     }
 
     private void onParpared()
     {
-        if(wlOnPreparedListener != null)
+        if(onPreparedListener != null)
         {
-            wlOnPreparedListener.onPrepared();
+            onPreparedListener.onPrepared();
         }
     }
 
@@ -384,7 +384,7 @@ public class QPlayer {
         if(surface != null)
         {
             try {
-                wlGlSurfaceView.setCodecType(1);
+                QGLSurfaceView.setCodecType(1);
                 String mtype = getMimeType(mimetype);
                 mediaFormat = MediaFormat.createVideoFormat(mtype, width, height);
                 mediaFormat.setInteger(MediaFormat.KEY_WIDTH, width);
@@ -405,9 +405,9 @@ public class QPlayer {
         }
         else
         {
-            if(wlOnErrorListener != null)
+            if(onErrorListener != null)
             {
-                wlOnErrorListener.onError(WlStatus.WL_STATUS_SURFACE_NULL, "surface is null");
+                onErrorListener.onError(Status.WL_STATUS_SURFACE_NULL, "surface is null");
             }
         }
     }
@@ -438,8 +438,8 @@ public class QPlayer {
         }
     }
 
-    public void setWlOnLoadListener(WlOnLoadListener wlOnLoadListener) {
-        this.wlOnLoadListener = wlOnLoadListener;
+    public void setOnLoadListener(QMediaPlayer.OnLoadListener onLoadListener) {
+        this.onLoadListener = onLoadListener;
     }
 
     private String getMimeType(int type)
@@ -465,68 +465,68 @@ public class QPlayer {
 
     public void setFrameData(int w, int h, byte[] y, byte[] u, byte[] v)
     {
-        if(wlGlSurfaceView != null)
+        if(QGLSurfaceView != null)
         {
-            MyLog.d("setFrameData");
-            wlGlSurfaceView.setCodecType(0);
-            wlGlSurfaceView.setFrameData(w, h, y, u, v);
+            LogUtil.d("setFrameData");
+            QGLSurfaceView.setCodecType(0);
+            QGLSurfaceView.setFrameData(w, h, y, u, v);
         }
     }
 
-    public void setWlOnInfoListener(WlOnInfoListener wlOnInfoListener) {
-        this.wlOnInfoListener = wlOnInfoListener;
+    public void setOnInfoListener(QMediaPlayer.OnInfoListener onInfoListener) {
+        this.onInfoListener = onInfoListener;
     }
 
     public void setVideoInfo(int currt_secd, int total_secd)
     {
-        if(wlOnInfoListener != null && wlTimeBean != null)
+        if(onInfoListener != null && timeBean != null)
         {
             if(currt_secd < lastCurrTime)
             {
                 currt_secd = lastCurrTime;
             }
-            wlTimeBean.setCurrt_secds(currt_secd);
-            wlTimeBean.setTotal_secds(total_secd);
-            wlOnInfoListener.onInfo(wlTimeBean);
+            timeBean.setCurrt_secds(currt_secd);
+            timeBean.setTotal_secds(total_secd);
+            onInfoListener.onInfo(timeBean);
             lastCurrTime = currt_secd;
         }
     }
 
-    public void setWlOnCompleteListener(WlOnCompleteListener wlOnCompleteListener) {
-        this.wlOnCompleteListener = wlOnCompleteListener;
+    public void setOnCompleteListener(QMediaPlayer.OnCompleteListener onCompleteListener) {
+        this.onCompleteListener = onCompleteListener;
     }
 
     public void videoComplete()
     {
-        if(wlOnCompleteListener != null)
+        if(onCompleteListener != null)
         {
             setVideoInfo(wlGetDuration(), wlGetDuration());
-            wlTimeBean = null;
-            wlOnCompleteListener.onComplete();
+            timeBean = null;
+            onCompleteListener.onComplete();
         }
     }
 
-    public void setWlOnCutVideoImgListener(WlOnCutVideoImgListener wlOnCutVideoImgListener) {
-        this.wlOnCutVideoImgListener = wlOnCutVideoImgListener;
+    public void setOnCutVideoImgListener(QMediaPlayer.OnCutVideoImgListener onCutVideoImgListener) {
+        this.onCutVideoImgListener = onCutVideoImgListener;
     }
 
     public void cutVideoImg()
     {
-        if(wlGlSurfaceView != null)
+        if(QGLSurfaceView != null)
         {
-            wlGlSurfaceView.cutVideoImg();
+            QGLSurfaceView.cutVideoImg();
         }
     }
 
-    public void setWlOnStopListener(WlOnStopListener wlOnStopListener) {
-        this.wlOnStopListener = wlOnStopListener;
+    public void setOnStopListener(QMediaPlayer.OnStopListener onStopListener) {
+        this.onStopListener = onStopListener;
     }
 
     public void onStopComplete()
     {
-        if(wlOnStopListener != null)
+        if(onStopListener != null)
         {
-            wlOnStopListener.onStop();
+            onStopListener.onStop();
         }
     }
 }
