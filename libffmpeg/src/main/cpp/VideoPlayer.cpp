@@ -84,7 +84,7 @@ void *codecFrame(void *data)
         {
             continue;
         }
-        if(videoPlayer->codecType == 1)
+        if(videoPlayer->codecType == DECODE_HARDWARE)
         {
             if(videoPlayer->queue->getAvPacketSize() == 0)//加载
             {
@@ -141,7 +141,7 @@ void *codecFrame(void *data)
 
 void VideoPlayer::playVideo(int type) {
     codecType = type;
-    if(codecType == 0){
+    if(codecType == DECODE_SOFTWARE){
         pthread_create(&mDecFrame, NULL, codecFrame, this);
     }
     pthread_create(&mVideoThread, NULL, decodVideoT, this);
@@ -151,8 +151,8 @@ void VideoPlayer::playVideo(int type) {
 void VideoPlayer::decodVideo() {
     while(!pPlayStatus->exit){
         isExit = false;
-        if(pPlayStatus->pause)//暂停
-        {
+        //暂停
+        if(pPlayStatus->pause){
             continue;
         }
         if(pPlayStatus->seek){
@@ -173,7 +173,7 @@ void VideoPlayer::decodVideo() {
                 pPlayStatus->load = false;
             }
         }
-        if(codecType == 1){
+        if(codecType == DECODE_HARDWARE){
             AVPacket *packet = av_packet_alloc();
             if(queue->getAvpacket(packet) != 0){
                 av_free(packet->data);
@@ -230,9 +230,7 @@ void VideoPlayer::decodVideo() {
             av_free(packet->buf);
             av_free(packet->side_data);
             packet = NULL;
-        }
-        else if(codecType == 0)
-        {
+        }else if(codecType == DECODE_SOFTWARE){
             AVFrame *frame = av_frame_alloc();
             if(queue->getAvframe(frame) != 0){
                 av_frame_free(&frame);
@@ -295,7 +293,6 @@ void VideoPlayer::decodVideo() {
 
 VideoPlayer::~VideoPlayer() {
     LOGE("video 释放完");
-
 }
 
 double VideoPlayer::synchronize(AVFrame *srcFrame, double pts) {

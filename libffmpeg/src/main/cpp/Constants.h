@@ -15,5 +15,8 @@
 #define CODEC_TYPE_MPEG4  3
 #define CODEC_TYPE_WMV  4
 
+#define DECODE_SOFTWARE  0
+#define DECODE_HARDWARE  1
+
 #endif //QPLAYER_CONSTANTS_H
 

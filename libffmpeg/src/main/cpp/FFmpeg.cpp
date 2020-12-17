@@ -235,11 +235,11 @@ int FFmpeg::start() {
     {
         if(mimeType == -1)
         {
-            pVideoPlayer->playVideo(0);
+            pVideoPlayer->playVideo(DECODE_SOFTWARE);
         }
         else
         {
-            pVideoPlayer->playVideo(1);
+            pVideoPlayer->playVideo(DECODE_HARDWARE);
         }
     }
 
