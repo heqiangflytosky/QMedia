@@ -18,18 +18,13 @@ JNIEXPORT void JNICALL getPlayerInfo(JNIEnv *env, jclass type) {
     av_register_all();
     // 遍历所支持的解码器
     AVCodec *c_temp = av_codec_next(NULL);
-    while (c_temp != NULL)
-    {
-        switch (c_temp->type)
-        {
-            case AVMEDIA_TYPE_VIDEO:
-                LOGD("[Video]:%s", c_temp->name);
+    while (c_temp != NULL) {
+        switch (c_temp->type) {
+            case AVMEDIA_TYPE_VIDEO: LOGD("[Video]:%s", c_temp->name);
                 break;
-            case AVMEDIA_TYPE_AUDIO:
-                LOGD("[Audio]:%s", c_temp->name);
+            case AVMEDIA_TYPE_AUDIO: LOGD("[Audio]:%s", c_temp->name);
                 break;
-            default:
-                LOGD("[Other]:%s", c_temp->name);
+            default: LOGD("[Other]:%s", c_temp->name);
                 break;
         }
         c_temp = c_temp->next;
@@ -41,12 +36,10 @@ extern "C"
 JNIEXPORT void JNICALL prepare(JNIEnv *env, jobject instance, jstring url_, jboolean isOnlyMusic) {
     const char *url = env->GetStringUTFChars(url_, 0);
     // TODO
-    if(wlJavaCall == NULL)
-    {
+    if (wlJavaCall == NULL) {
         wlJavaCall = new JavaCall(javaVM, env, &instance);
     }
-    if(wlFFmpeg == NULL)
-    {
+    if (wlFFmpeg == NULL) {
         wlFFmpeg = new FFmpeg(wlJavaCall, url, isOnlyMusic);
         wlJavaCall->onLoad(THREAD_MAIN, true);
         wlFFmpeg->preparedFFmpeg();
@@ -57,8 +50,7 @@ extern "C"
 JNIEXPORT void JNICALL start(JNIEnv *env, jobject instance) {
 
     // TODO
-    if(wlFFmpeg != NULL)
-    {
+    if (wlFFmpeg != NULL) {
         wlFFmpeg->start();
     }
 
@@ -67,19 +59,16 @@ JNIEXPORT void JNICALL start(JNIEnv *env, jobject instance) {
 extern "C"
 JNIEXPORT void JNICALL stop(JNIEnv *env, jobject instance, bool exit) {
     // TODO
-    if(wlFFmpeg != NULL)
-    {
+    if (wlFFmpeg != NULL) {
         wlFFmpeg->exitByUser = true;
         wlFFmpeg->release();
-        delete(wlFFmpeg);
+        delete (wlFFmpeg);
         wlFFmpeg = NULL;
-        if(wlJavaCall != NULL)
-        {
+        if (wlJavaCall != NULL) {
             wlJavaCall->release();
             wlJavaCall = NULL;
         }
-        if(!exit)
-        {
+        if (!exit) {
             jclass jlz = env->GetObjectClass(instance);
             jmethodID jmid_stop = env->GetMethodID(jlz, "onStopComplete", "()V");
             env->CallVoidMethod(instance, jmid_stop);
@@ -90,8 +79,7 @@ JNIEXPORT void JNICALL stop(JNIEnv *env, jobject instance, bool exit) {
 JNIEXPORT void JNICALL pause(JNIEnv *env, jobject instance) {
 
     // TODO
-    if(wlFFmpeg != NULL)
-    {
+    if (wlFFmpeg != NULL) {
         wlFFmpeg->pause();
     }
 
@@ -99,8 +87,7 @@ JNIEXPORT void JNICALL pause(JNIEnv *env, jobject instance) {
 JNIEXPORT void JNICALL resume(JNIEnv *env, jobject instance) {
 
     // TODO
-    if(wlFFmpeg != NULL)
-    {
+    if (wlFFmpeg != NULL) {
         wlFFmpeg->resume();
     }
 
@@ -108,8 +95,7 @@ JNIEXPORT void JNICALL resume(JNIEnv *env, jobject instance) {
 JNIEXPORT void JNICALL seek(JNIEnv *env, jobject instance, jint secds) {
 
     // TODO
-    if(wlFFmpeg != NULL)
-    {
+    if (wlFFmpeg != NULL) {
         wlFFmpeg->seek(secds);
     }
 
@@ -117,8 +103,7 @@ JNIEXPORT void JNICALL seek(JNIEnv *env, jobject instance, jint secds) {
 JNIEXPORT jint JNICALL getDuration(JNIEnv *env, jobject instance) {
 
     // TODO
-    if(wlFFmpeg != NULL)
-    {
+    if (wlFFmpeg != NULL) {
         return wlFFmpeg->getDuration();
     }
     return 0;
@@ -126,8 +111,7 @@ JNIEXPORT jint JNICALL getDuration(JNIEnv *env, jobject instance) {
 }extern "C"
 JNIEXPORT jint JNICALL getAudioChannels(JNIEnv *env, jobject instance) {
 
-    if(wlFFmpeg != NULL)
-    {
+    if (wlFFmpeg != NULL) {
         return wlFFmpeg->getAudioChannels();
     }
     return 0;
@@ -135,8 +119,7 @@ JNIEXPORT jint JNICALL getAudioChannels(JNIEnv *env, jobject instance) {
 JNIEXPORT jint JNICALL getVideoHeidht(JNIEnv *env, jobject instance) {
 
     // TODO
-    if(wlFFmpeg != NULL)
-    {
+    if (wlFFmpeg != NULL) {
         return wlFFmpeg->getVideoHeight();
     }
     return 0;
@@ -145,8 +128,7 @@ JNIEXPORT jint JNICALL getVideoHeidht(JNIEnv *env, jobject instance) {
 JNIEXPORT jint JNICALL getVideoWidth(JNIEnv *env, jobject instance) {
 
     // TODO
-    if(wlFFmpeg != NULL)
-    {
+    if (wlFFmpeg != NULL) {
         return wlFFmpeg->getVideoWidth();
     }
     return 0;
@@ -156,40 +138,37 @@ extern "C"
 JNIEXPORT void JNICALL setAudioChannels(JNIEnv *env, jobject instance, jint index) {
 
     // TODO
-    if(wlFFmpeg != NULL)
-    {
+    if (wlFFmpeg != NULL) {
         wlFFmpeg->setAudioChannel(index);
     }
 
 }
 
 // 建立jni映射表，将c和java的函数关联起来
-const JNINativeMethod methods[]={
-        {"getConfigure","()Ljava/lang/String;",(jobject *)getConfigure},
-        {"getPlayerInfo","()V",(void *)getPlayerInfo},
-        {"wlPrepared","(Ljava/lang/String;Z)V",(void *)prepare},
-        {"wlStart","()V",(void *)start},
-        {"wlStop","(Z)V",(void *)stop},
-        {"wlPause","()V",(void *)pause},
-        {"wlResume","()V",(void *)resume},
-        {"wlSeek","(I)V",(void *)seek},
-        {"wlGetDuration","()I",(void *)getDuration},
-        {"wlGetAudioChannels","()I",(void *)getAudioChannels},
-        {"wlGetVideoHeidht","()I",(void *)getVideoHeidht},
-        {"wlGetVideoWidth","()I",(void *)getVideoWidth},
-        {"wlSetAudioChannels","(I)V",(void *)setAudioChannels}
+const JNINativeMethod methods[] = {
+        {"getConfigure",       "()Ljava/lang/String;",   (jobject *) getConfigure},
+        {"getPlayerInfo",      "()V",                    (void *) getPlayerInfo},
+        {"wlPrepared",         "(Ljava/lang/String;Z)V", (void *) prepare},
+        {"wlStart",            "()V",                    (void *) start},
+        {"wlStop",             "(Z)V",                   (void *) stop},
+        {"wlPause",            "()V",                    (void *) pause},
+        {"wlResume",           "()V",                    (void *) resume},
+        {"wlSeek",             "(I)V",                   (void *) seek},
+        {"wlGetDuration",      "()I",                    (void *) getDuration},
+        {"wlGetAudioChannels", "()I",                    (void *) getAudioChannels},
+        {"wlGetVideoHeidht",   "()I",                    (void *) getVideoHeidht},
+        {"wlGetVideoWidth",    "()I",                    (void *) getVideoWidth},
+        {"wlSetAudioChannels", "(I)V",                   (void *) setAudioChannels}
 };
 
 //当动态库被加载时这个函数被系统调用
 extern "C"
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
-{
+JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved) {
     jint result = -1;
     javaVM = vm;
-    JNIEnv* env;
+    JNIEnv *env;
 
-    if (vm->GetEnv((void**)&env, JNI_VERSION_1_4) != JNI_OK)
-    {
+    if (vm->GetEnv((void **) &env, JNI_VERSION_1_4) != JNI_OK) {
         LOGE("GetEnv failed!");
         return result;
     }
@@ -200,7 +179,7 @@ JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reserved)
     }
 
     //注册映射表
-    if(env->RegisterNatives(cls,methods,sizeof(methods)/sizeof(JNINativeMethod))<0){
+    if (env->RegisterNatives(cls, methods, sizeof(methods) / sizeof(JNINativeMethod)) < 0) {
         return JNI_ERR;
     }
     return JNI_VERSION_1_4;

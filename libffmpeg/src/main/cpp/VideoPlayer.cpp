@@ -14,97 +14,79 @@ VideoPlayer::VideoPlayer(JavaCall *javaCall, AudioPlayer *audio, PlayStatus *pla
 void VideoPlayer::release() {
     LOGE("开始释放audio ...");
 
-    if(pPlayStatus != NULL)
-    {
+    if (pPlayStatus != NULL) {
         pPlayStatus->exit = true;
     }
-    if(queue != NULL)
-    {
+    if (queue != NULL) {
         queue->noticeThread();
     }
     int count = 0;
-    while(!isExit || !isExit2)
-    {
+    while (!isExit || !isExit2) {
         LOGE("等待渲染线程结束...%d", count);
 
-        if(count > 1000)
-        {
+        if (count > 1000) {
             isExit = true;
             isExit2 = true;
         }
         count++;
         av_usleep(1000 * 10);
     }
-    if(queue != NULL)
-    {
+    if (queue != NULL) {
         queue->release();
-        delete(queue);
+        delete (queue);
         queue = NULL;
     }
-    if(pJavaCall != NULL)
-    {
+    if (pJavaCall != NULL) {
         pJavaCall = NULL;
     }
-    if(pAudioPlayer != NULL)
-    {
+    if (pAudioPlayer != NULL) {
         pAudioPlayer = NULL;
     }
-    if(pAVCodecContext != NULL)
-    {
+    if (pAVCodecContext != NULL) {
         avcodec_close(pAVCodecContext);
         avcodec_free_context(&pAVCodecContext);
         pAVCodecContext = NULL;
     }
-    if(pPlayStatus != NULL)
-    {
+    if (pPlayStatus != NULL) {
         pPlayStatus = NULL;
     }
 }
 
-void *decodVideoT(void *data)
-{
+void *decodVideoT(void *data) {
     VideoPlayer *videoPlayer = (VideoPlayer *) data;
     videoPlayer->decodVideo();
     pthread_exit(&videoPlayer->mVideoThread);
 
 }
 
-void *codecFrame(void *data)
-{
+void *codecFrame(void *data) {
     VideoPlayer *videoPlayer = (VideoPlayer *) data;
 
-    while(!videoPlayer->pPlayStatus->exit)
-    {
-        if(videoPlayer->pPlayStatus->seek)
-        {
+    while (!videoPlayer->pPlayStatus->exit) {
+        if (videoPlayer->pPlayStatus->seek) {
             continue;
         }
         videoPlayer->isExit2 = false;
-        if(videoPlayer->queue->getAvFrameSize() > 20)
-        {
+        if (videoPlayer->queue->getAvFrameSize() > 20) {
             continue;
         }
-        if(videoPlayer->codecType == DECODE_HARDWARE)
-        {
-            if(videoPlayer->queue->getAvPacketSize() == 0)//加载
+        if (videoPlayer->codecType == DECODE_HARDWARE) {
+            if (videoPlayer->queue->getAvPacketSize() == 0)//加载
             {
-                if(!videoPlayer->pPlayStatus->load)
-                {
+                if (!videoPlayer->pPlayStatus->load) {
                     videoPlayer->pJavaCall->onLoad(THREAD_CHILD, true);
                     videoPlayer->pPlayStatus->load = true;
                 }
                 continue;
-            } else{
-                if(videoPlayer->pPlayStatus->load)
-                {
+            } else {
+                if (videoPlayer->pPlayStatus->load) {
                     videoPlayer->pJavaCall->onLoad(THREAD_CHILD, false);
                     videoPlayer->pPlayStatus->load = false;
                 }
             }
         }
         AVPacket *packet = av_packet_alloc();
-        if(videoPlayer->queue->getAvpacket(packet) != 0)
-        {
+        if (videoPlayer->queue->getAvpacket(packet) != 0) {
             av_packet_free(&packet);
             av_free(packet);
             packet = NULL;
@@ -141,7 +123,7 @@ void *codecFrame(void *data)
 
 void VideoPlayer::playVideo(int type) {
     codecType = type;
-    if(codecType == DECODE_SOFTWARE){
+    if (codecType == DECODE_SOFTWARE) {
         pthread_create(&mDecFrame, NULL, codecFrame, this);
     }
     pthread_create(&mVideoThread, NULL, decodVideoT, this);
@@ -149,33 +131,33 @@ void VideoPlayer::playVideo(int type) {
 }
 
 void VideoPlayer::decodVideo() {
-    while(!pPlayStatus->exit){
+    while (!pPlayStatus->exit) {
         isExit = false;
         //暂停
-        if(pPlayStatus->pause){
+        if (pPlayStatus->pause) {
             continue;
         }
-        if(pPlayStatus->seek){
+        if (pPlayStatus->seek) {
             pJavaCall->onLoad(THREAD_CHILD, true);
             pPlayStatus->load = true;
             continue;
         }
         //加载
-        if(queue->getAvPacketSize() == 0){
-            if(!pPlayStatus->load){
+        if (queue->getAvPacketSize() == 0) {
+            if (!pPlayStatus->load) {
                 pJavaCall->onLoad(THREAD_CHILD, true);
                 pPlayStatus->load = true;
             }
             continue;
         } else {
-            if(pPlayStatus->load){
+            if (pPlayStatus->load) {
                 pJavaCall->onLoad(THREAD_CHILD, false);
                 pPlayStatus->load = false;
             }
         }
-        if(codecType == DECODE_HARDWARE){
+        if (codecType == DECODE_HARDWARE) {
             AVPacket *packet = av_packet_alloc();
-            if(queue->getAvpacket(packet) != 0){
+            if (queue->getAvpacket(packet) != 0) {
                 av_free(packet->data);
                 av_free(packet->buf);
                 av_free(packet->side_data);
@@ -186,25 +168,25 @@ void VideoPlayer::decodVideo() {
 
             LOGE("video clock is %f", time);
             LOGE("audio clock is %f", pAudioPlayer->clock);
-            if(time < 0){
+            if (time < 0) {
                 time = packet->dts * av_q2d(time_base);
             }
 
-            if(time < clock){
+            if (time < clock) {
                 time = clock;
             }
             clock = time;
             double diff = 0;
-            if(pAudioPlayer != NULL){
+            if (pAudioPlayer != NULL) {
                 diff = pAudioPlayer->clock - clock;
             }
             playCount++;
-            if(playCount > 500){
+            if (playCount > 500) {
                 playCount = 0;
             }
-            if(diff >= 0.5){
-                if(frameRateBig){
-                    if(playCount % 3 == 0 && packet->flags != AV_PKT_FLAG_KEY){
+            if (diff >= 0.5) {
+                if (frameRateBig) {
+                    if (playCount % 3 == 0 && packet->flags != AV_PKT_FLAG_KEY) {
                         av_free(packet->data);
                         av_free(packet->buf);
                         av_free(packet->side_data);
@@ -230,21 +212,21 @@ void VideoPlayer::decodVideo() {
             av_free(packet->buf);
             av_free(packet->side_data);
             packet = NULL;
-        }else if(codecType == DECODE_SOFTWARE){
+        } else if (codecType == DECODE_SOFTWARE) {
             AVFrame *frame = av_frame_alloc();
-            if(queue->getAvframe(frame) != 0){
+            if (queue->getAvframe(frame) != 0) {
                 av_frame_free(&frame);
                 av_free(frame);
                 frame = NULL;
                 continue;
             }
-            if ((framePts = av_frame_get_best_effort_timestamp(frame)) == AV_NOPTS_VALUE){
-               framePts = 0;
+            if ((framePts = av_frame_get_best_effort_timestamp(frame)) == AV_NOPTS_VALUE) {
+                framePts = 0;
             }
             framePts *= av_q2d(time_base);
             clock = synchronize(frame, framePts);
             double diff = 0;
-            if(pAudioPlayer != NULL){
+            if (pAudioPlayer != NULL) {
                 diff = pAudioPlayer->clock - clock;
             }
             delayTime = getDelayTime(diff);
@@ -258,12 +240,12 @@ void VideoPlayer::decodVideo() {
 //            }
 
             playCount++;
-            if(playCount > 500){
+            if (playCount > 500) {
                 playCount = 0;
             }
-            if(diff >= 0.5){
-                if(frameRateBig){
-                    if(playCount % 3 == 0){
+            if (diff >= 0.5) {
+                if (frameRateBig) {
+                    if (playCount % 3 == 0) {
                         av_frame_free(&frame);
                         av_free(frame);
                         frame = NULL;
@@ -281,7 +263,8 @@ void VideoPlayer::decodVideo() {
 
             av_usleep(delayTime * 1000);
             pJavaCall->onVideoInfo(THREAD_CHILD, clock, duration);
-            pJavaCall->onGlRenderYuv(THREAD_CHILD, frame->linesize[0], frame->height, frame->data[0], frame->data[1], frame->data[2]);
+            pJavaCall->onGlRenderYuv(THREAD_CHILD, frame->linesize[0], frame->height, frame->data[0], frame->data[1],
+                                     frame->data[2]);
             av_frame_free(&frame);
             av_free(frame);
             frame = NULL;
@@ -315,34 +298,31 @@ double VideoPlayer::getDelayTime(double diff) {
 
     LOGD("audio video diff is %f", diff);
 
-    if(diff > 0.003){
+    if (diff > 0.003) {
         delayTime = delayTime / 3 * 2;
-        if(delayTime < rate / 2){
+        if (delayTime < rate / 2) {
             delayTime = rate / 3 * 2;
-        }
-        else if(delayTime > rate * 2){
+        } else if (delayTime > rate * 2) {
             delayTime = rate * 2;
         }
 
-    }
-    else if(diff < -0.003){
+    } else if (diff < -0.003) {
         delayTime = delayTime * 3 / 2;
-        if(delayTime < rate / 2){
+        if (delayTime < rate / 2) {
             delayTime = rate / 3 * 2;
-        }
-        else if(delayTime > rate * 2){
+        } else if (delayTime > rate * 2) {
             delayTime = rate * 2;
         }
-    }else if(diff == 0){
+    } else if (diff == 0) {
         delayTime = rate;
     }
-    if(diff > 1.0){
+    if (diff > 1.0) {
         delayTime = 0;
     }
-    if(diff < -1.0){
+    if (diff < -1.0) {
         delayTime = rate * 2;
     }
-    if(fabs(diff) > 10){
+    if (fabs(diff) > 10) {
         delayTime = rate;
     }
     return delayTime;

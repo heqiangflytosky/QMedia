@@ -31,34 +31,27 @@ public class QGLSurfaceView extends GLSurfaceView {
     }
 
     public void setOnGlSurfaceViewOncreateListener(QMediaPlayer.OnGlSurfaceViewOnCreateListener onGlSurfaceViewOncreateListener) {
-        if(QGLRender != null)
-        {
+        if (QGLRender != null) {
             QGLRender.setOnGlSurfaceViewOncreateListener(onGlSurfaceViewOncreateListener);
         }
     }
 
-    public void setCodecType(int type)
-    {
-        if(QGLRender != null)
-        {
+    public void setCodecType(int type) {
+        if (QGLRender != null) {
             QGLRender.setCodecType(type);
         }
     }
 
 
-    public void setFrameData(int w, int h, byte[] y, byte[] u, byte[] v)
-    {
-        if(QGLRender != null)
-        {
+    public void setFrameData(int w, int h, byte[] y, byte[] u, byte[] v) {
+        if (QGLRender != null) {
             QGLRender.setFrameData(w, h, y, u, v);
             requestRender();
         }
     }
 
-    public void cutVideoImg()
-    {
-        if(QGLRender != null)
-        {
+    public void cutVideoImg() {
+        if (QGLRender != null) {
             QGLRender.cutVideoImg();
             requestRender();
         }

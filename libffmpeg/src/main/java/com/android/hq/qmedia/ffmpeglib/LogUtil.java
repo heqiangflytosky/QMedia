@@ -4,8 +4,7 @@ import android.util.Log;
 
 public class LogUtil {
 
-    public static void d(String msg)
-    {
+    public static void d(String msg) {
         Log.d("qmedia", msg);
     }
 

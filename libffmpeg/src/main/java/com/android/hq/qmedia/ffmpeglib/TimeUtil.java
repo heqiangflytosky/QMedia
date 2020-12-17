@@ -3,8 +3,7 @@ package com.android.hq.qmedia.ffmpeglib;
 public class TimeUtil {
 
     public static String secdsToDateFormat(int sends) {
-        if(sends <= 0)
-        {
+        if (sends <= 0) {
             return "00:00:00";
         }
         long hours = sends / (60 * 60);
@@ -38,6 +37,4 @@ public class TimeUtil {
         }
         return sh + ":" + sm + ":" + ss;
     }
-
-
 }

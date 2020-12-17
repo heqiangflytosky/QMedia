@@ -96,8 +96,7 @@ public class QPlayer {
 
     private boolean isOnlySoft = false;
 
-    public QPlayer()
-    {
+    public QPlayer() {
         timeBean = new TimeBean();
     }
 
@@ -118,20 +117,17 @@ public class QPlayer {
         QGLSurfaceView.setOnGlSurfaceViewOncreateListener(new QMediaPlayer.OnGlSurfaceViewOnCreateListener() {
             @Override
             public void onGlSurfaceViewOncreate(Surface s) {
-                if(surface == null)
-                {
+                if (surface == null) {
                     setSurface(s);
                 }
-                if(parpared && !TextUtils.isDigitsOnly(dataSource))
-                {
+                if (parpared && !TextUtils.isDigitsOnly(dataSource)) {
                     wlPrepared(dataSource, isOnlyMusic);
                 }
             }
 
             @Override
             public void onCutVideoImg(Bitmap bitmap) {
-                if(onCutVideoImgListener != null)
-                {
+                if (onCutVideoImgListener != null) {
                     onCutVideoImgListener.onCutVideoImg(bitmap);
                 }
             }
@@ -141,6 +137,7 @@ public class QPlayer {
 
     /**
      * 准备
+     *
      * @param url
      */
     private native void wlPrepared(String url, boolean isOnlyMusic);
@@ -167,67 +164,69 @@ public class QPlayer {
 
     /**
      * seek
+     *
      * @param secds
      */
     private native void wlSeek(int secds);
 
     /**
      * 设置音轨 根据获取的音轨数 排序
+     *
      * @param index
      */
     private native void wlSetAudioChannels(int index);
 
     /**
      * 获取总时长
+     *
      * @return
      */
     private native int wlGetDuration();
 
     /**
      * 获取音轨数
+     *
      * @return
      */
     private native int wlGetAudioChannels();
 
     /**
      * 获取视频宽度
+     *
      * @return
      */
     private native int wlGetVideoWidth();
 
     /**
      * 获取视频长度
+     *
      * @return
      */
     private native int wlGetVideoHeidht();
 
     public static native String getConfigure();
+
     public static native void getPlayerInfo();
-    public int getDuration()
-    {
+
+    public int getDuration() {
         return wlGetDuration();
     }
 
-    public int getAudioChannels()
-    {
+    public int getAudioChannels() {
         return wlGetAudioChannels();
     }
 
-    public int getVideoWidth()
-    {
+    public int getVideoWidth() {
         return wlGetVideoWidth();
     }
 
-    public int getVideoHeight()
-    {
+    public int getVideoHeight() {
         return wlGetVideoHeidht();
     }
 
-    public void setAudioChannels(int index)
-    {
+    public void setAudioChannels(int index) {
         wlSetAudioChannels(index);
     }
-
 
 
     public void setOnPreparedListener(QMediaPlayer.OnPreparedListener onPreparedListener) {
@@ -235,53 +234,41 @@ public class QPlayer {
     }
 
 
-
     public void setOnErrorListener(QMediaPlayer.OnErrorListener onErrorListener) {
         this.onErrorListener = onErrorListener;
     }
 
-    public void prepared()
-    {
-        if(TextUtils.isEmpty(dataSource))
-        {
+    public void prepared() {
+        if (TextUtils.isEmpty(dataSource)) {
             onError(Status.WL_STATUS_DATASOURCE_NULL, "datasource is null");
             return;
         }
         parpared = true;
-        if(isOnlyMusic)
-        {
+        if (isOnlyMusic) {
             wlPrepared(dataSource, isOnlyMusic);
-        }
-        else
-        {
-            if(surface != null)
-            {
+        } else {
+            if (surface != null) {
                 wlPrepared(dataSource, isOnlyMusic);
             }
         }
     }
 
-    public void start()
-    {
+    public void start() {
         new Thread(new Runnable() {
             @Override
             public void run() {
-                if(TextUtils.isEmpty(dataSource))
-                {
+                if (TextUtils.isEmpty(dataSource)) {
                     onError(Status.WL_STATUS_DATASOURCE_NULL, "datasource is null");
                     return;
                 }
-                if(!isOnlyMusic)
-                {
-                    if(surface == null)
-                    {
+                if (!isOnlyMusic) {
+                    if (surface == null) {
                         onError(Status.WL_STATUS_SURFACE_NULL, "surface is null");
                         return;
                     }
                 }
 
-                if(timeBean == null)
-                {
+                if (timeBean == null) {
                     timeBean = new TimeBean();
                 }
                 wlStart();
@@ -289,29 +276,23 @@ public class QPlayer {
         }).start();
     }
 
-    public void stop(final boolean exit)
-    {
+    public void stop(final boolean exit) {
         new Thread(new Runnable() {
             @Override
             public void run() {
                 wlStop(exit);
-                if(mediaCodec != null)
-                {
-                    try
-                    {
+                if (mediaCodec != null) {
+                    try {
                         mediaCodec.flush();
                         mediaCodec.stop();
                         mediaCodec.release();
-                    }
-                    catch (Exception e)
-                    {
+                    } catch (Exception e) {
                         e.printStackTrace();
                     }
                     mediaCodec = null;
                     mediaFormat = null;
                 }
-                if(QGLSurfaceView != null)
-                {
+                if (QGLSurfaceView != null) {
                     QGLSurfaceView.setCodecType(-1);
                     QGLSurfaceView.requestRender();
                 }
@@ -320,19 +301,16 @@ public class QPlayer {
         }).start();
     }
 
-    public void pause()
-    {
+    public void pause() {
         wlPause();
 
     }
 
-    public void resume()
-    {
+    public void resume() {
         wlResume();
     }
 
-    public void seek(final int secds)
-    {
+    public void seek(final int secds) {
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -342,47 +320,36 @@ public class QPlayer {
         }).start();
     }
 
-    public void setOnlySoft(boolean soft)
-    {
+    public void setOnlySoft(boolean soft) {
         this.isOnlySoft = soft;
     }
 
-    public boolean isOnlySoft()
-    {
+    public boolean isOnlySoft() {
         return isOnlySoft;
     }
 
 
-
-    private void onLoad(boolean load)
-    {
-        if(onLoadListener != null)
-        {
+    private void onLoad(boolean load) {
+        if (onLoadListener != null) {
             onLoadListener.onLoad(load);
         }
     }
 
-    private void onError(int code, String msg)
-    {
-        if(onErrorListener != null)
-        {
+    private void onError(int code, String msg) {
+        if (onErrorListener != null) {
             onErrorListener.onError(code, msg);
         }
         stop(true);
     }
 
-    private void onParpared()
-    {
-        if(onPreparedListener != null)
-        {
+    private void onParpared() {
+        if (onPreparedListener != null) {
             onPreparedListener.onPrepared();
         }
     }
 
-    public void mediacodecInit(int mimetype, int width, int height, byte[] csd0, byte[] csd1)
-    {
-        if(surface != null)
-        {
+    public void mediacodecInit(int mimetype, int width, int height, byte[] csd0, byte[] csd1) {
+        if (surface != null) {
             try {
                 QGLSurfaceView.setCodecType(1);
                 String mtype = getMimeType(mimetype);
@@ -394,33 +361,25 @@ public class QPlayer {
                 mediaFormat.setByteBuffer("csd-1", ByteBuffer.wrap(csd1));
                 Log.d("ywl5320", mediaFormat.toString());
                 mediaCodec = MediaCodec.createDecoderByType(mtype);
-                if(surface != null)
-                {
+                if (surface != null) {
                     mediaCodec.configure(mediaFormat, surface, null, 0);
                     mediaCodec.start();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
-        else
-        {
-            if(onErrorListener != null)
-            {
+        } else {
+            if (onErrorListener != null) {
                 onErrorListener.onError(Status.WL_STATUS_SURFACE_NULL, "surface is null");
             }
         }
     }
 
-    public void mediacodecDecode(byte[] bytes, int size, int pts)
-    {
-        if(bytes != null && mediaCodec != null && info != null)
-        {
-            try
-            {
+    public void mediacodecDecode(byte[] bytes, int size, int pts) {
+        if (bytes != null && mediaCodec != null && info != null) {
+            try {
                 int inputBufferIndex = mediaCodec.dequeueInputBuffer(10);
-                if(inputBufferIndex >= 0)
-                {
+                if (inputBufferIndex >= 0) {
                     ByteBuffer byteBuffer = mediaCodec.getInputBuffers()[inputBufferIndex];
                     byteBuffer.clear();
                     byteBuffer.put(bytes);
@@ -431,8 +390,7 @@ public class QPlayer {
                     mediaCodec.releaseOutputBuffer(index, true);
                     index = mediaCodec.dequeueOutputBuffer(info, 10);
                 }
-            }catch (Exception e)
-            {
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -442,31 +400,21 @@ public class QPlayer {
         this.onLoadListener = onLoadListener;
     }
 
-    private String getMimeType(int type)
-    {
-        if(type == 1)
-        {
+    private String getMimeType(int type) {
+        if (type == 1) {
             return "video/avc";
-        }
-        else if(type == 2)
-        {
+        } else if (type == 2) {
             return "video/hevc";
-        }
-        else if(type == 3)
-        {
+        } else if (type == 3) {
             return "video/mp4v-es";
-        }
-        else if(type == 4)
-        {
+        } else if (type == 4) {
             return "video/x-ms-wmv";
         }
         return "";
     }
 
-    public void setFrameData(int w, int h, byte[] y, byte[] u, byte[] v)
-    {
-        if(QGLSurfaceView != null)
-        {
+    public void setFrameData(int w, int h, byte[] y, byte[] u, byte[] v) {
+        if (QGLSurfaceView != null) {
             LogUtil.d("setFrameData");
             QGLSurfaceView.setCodecType(0);
             QGLSurfaceView.setFrameData(w, h, y, u, v);
@@ -477,12 +425,9 @@ public class QPlayer {
         this.onInfoListener = onInfoListener;
     }
 
-    public void setVideoInfo(int currt_secd, int total_secd)
-    {
-        if(onInfoListener != null && timeBean != null)
-        {
-            if(currt_secd < lastCurrTime)
-            {
+    public void setVideoInfo(int currt_secd, int total_secd) {
+        if (onInfoListener != null && timeBean != null) {
+            if (currt_secd < lastCurrTime) {
                 currt_secd = lastCurrTime;
             }
             timeBean.setCurrt_secds(currt_secd);
@@ -496,10 +441,8 @@ public class QPlayer {
         this.onCompleteListener = onCompleteListener;
     }
 
-    public void videoComplete()
-    {
-        if(onCompleteListener != null)
-        {
+    public void videoComplete() {
+        if (onCompleteListener != null) {
             setVideoInfo(wlGetDuration(), wlGetDuration());
             timeBean = null;
             onCompleteListener.onComplete();
@@ -510,10 +453,8 @@ public class QPlayer {
         this.onCutVideoImgListener = onCutVideoImgListener;
     }
 
-    public void cutVideoImg()
-    {
-        if(QGLSurfaceView != null)
-        {
+    public void cutVideoImg() {
+        if (QGLSurfaceView != null) {
             QGLSurfaceView.cutVideoImg();
         }
     }
@@ -522,10 +463,8 @@ public class QPlayer {
         this.onStopListener = onStopListener;
     }
 
-    public void onStopComplete()
-    {
-        if(onStopListener != null)
-        {
+    public void onStopComplete() {
+        if (onStopListener != null) {
             onStopListener.onStop();
         }
     }

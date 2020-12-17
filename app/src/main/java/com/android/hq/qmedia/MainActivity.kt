@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
             player.start()
         }
         //player.setOnlyMusic(true);
-        player.isOnlySoft = true
+        //player.isOnlySoft = true
 
     }
 

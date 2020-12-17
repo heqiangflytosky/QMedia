@@ -133,27 +133,22 @@ public class QGLRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFrame
     public void onDrawFrame(GL10 gl) {
         GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
         GLES20.glClearColor(0f, 0f, 0f, 1f);
-        if(codecType == 1)
-        {
+        if(codecType == 1) {
             renderMediacodec();
-            LogUtil.d("mediaocdec.......");
+            LogUtil.d("render by mediaCodec.......");
         }
-        else if(codecType == 0)
-        {
+        else if(codecType == 0) {
             renderYuv();
-            LogUtil.d("yuv.......");
+            LogUtil.d("render by yuv.......");
         }
-        else
-        {
+        else {
             renderStop();
         }
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
-        if(cutimg)
-        {
+        if(cutimg) {
             cutimg = false;
             Bitmap bitmap = cutBitmap(0, 0, sWidth, sHeight);
-            if(onGlSurfaceViewOncreateListener != null)
-            {
+            if(onGlSurfaceViewOncreateListener != null) {
                 onGlSurfaceViewOncreateListener.onCutVideoImg(bitmap);
             }
         }
@@ -349,8 +344,7 @@ public class QGLRender implements GLSurfaceView.Renderer, SurfaceTexture.OnFrame
         return bitmap;
     }
 
-    public void cutVideoImg()
-    {
+    public void cutVideoImg() {
         cutimg = true;
     }
 

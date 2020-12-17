@@ -1,8 +1,7 @@
 
 #include "FFmpeg.h"
 
-void *decodeThread(void *data)
-{
+void *decodeThread(void *data) {
     FFmpeg *ffmpeg = (FFmpeg *) data;
     ffmpeg->decodeFFmpeg();
     pthread_exit(&ffmpeg->decodThread);
@@ -24,11 +23,9 @@ FFmpeg::FFmpeg(JavaCall *javaCall, const char *url, bool onlymusic) {
     pPlayStatus = new PlayStatus();
 }
 
-int avformat_interrupt_cb(void *ctx)
-{
+int avformat_interrupt_cb(void *ctx) {
     FFmpeg *ffmpeg = (FFmpeg *) ctx;
-    if(ffmpeg->pPlayStatus->exit)
-    {
+    if (ffmpeg->pPlayStatus->exit) {
         LOGE("avformat_interrupt_cb return 1")
         return AVERROR_EOF;
     }
@@ -43,11 +40,9 @@ int FFmpeg::decodeFFmpeg() {
     av_register_all();
     avformat_network_init();
     pFormatCtx = avformat_alloc_context();
-    if (avformat_open_input(&pFormatCtx, urlpath, NULL, NULL) != 0)
-    {
+    if (avformat_open_input(&pFormatCtx, urlpath, NULL, NULL) != 0) {
         LOGE("can not open url:%s", urlpath);
-        if(pJavaCall != NULL)
-        {
+        if (pJavaCall != NULL) {
             pJavaCall->onError(THREAD_CHILD, ERROR_FFMPEG_CAN_NOT_OPEN_URL, "can not open url");
         }
         exit = true;
@@ -57,20 +52,18 @@ int FFmpeg::decodeFFmpeg() {
     pFormatCtx->interrupt_callback.callback = avformat_interrupt_cb;
     pFormatCtx->interrupt_callback.opaque = this;
 
-    if (avformat_find_stream_info(pFormatCtx, NULL) < 0)
-    {
+    if (avformat_find_stream_info(pFormatCtx, NULL) < 0) {
         LOGE("can not find streams from %s", urlpath);
-        if(pJavaCall != NULL) {
+        if (pJavaCall != NULL) {
             pJavaCall->onError(THREAD_CHILD, ERROR_FFMPEG_CAN_NOT_FIND_STREAMS,
-                                "can not find streams from url");
+                               "can not find streams from url");
         }
         exit = true;
         pthread_mutex_unlock(&init_mutex);
         return -1;
     }
 
-    if(pFormatCtx == NULL)
-    {
+    if (pFormatCtx == NULL) {
         exit = true;
         pthread_mutex_unlock(&init_mutex);
         return -1;
@@ -78,23 +71,19 @@ int FFmpeg::decodeFFmpeg() {
 
     duration = pFormatCtx->duration / 1000000;
     LOGD("channel numbers is %d", pFormatCtx->nb_streams);
-    for(int i = 0; i < pFormatCtx->nb_streams; i++)
-    {
-        if(pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO )//音频
+    for (int i = 0; i < pFormatCtx->nb_streams; i++) {
+        if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)//音频
         {
             LOGE("音频");
             AudioChannel *ac = new AudioChannel(i, pFormatCtx->streams[i]->time_base);
             audiochannels.push_front(ac);
-        }
-        else if(pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)//视频
+        } else if (pFormatCtx->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)//视频
         {
-            if(!isOnlyMusic)
-            {
+            if (!isOnlyMusic) {
                 LOGE("视频");
                 int num = pFormatCtx->streams[i]->avg_frame_rate.num;
                 int den = pFormatCtx->streams[i]->avg_frame_rate.den;
-                if(num != 0 && den != 0)
-                {
+                if (num != 0 && den != 0) {
                     int fps = pFormatCtx->streams[i]->avg_frame_rate.num / pFormatCtx->streams[i]->avg_frame_rate.den;
                     AudioChannel *ac = new AudioChannel(i, pFormatCtx->streams[i]->time_base, fps);
                     videochannels.push_front(ac);
@@ -104,14 +93,11 @@ int FFmpeg::decodeFFmpeg() {
     }
 
 
-    if(audiochannels.size() > 0)
-    {
+    if (audiochannels.size() > 0) {
         pAudioPlayer = new AudioPlayer(pPlayStatus, pJavaCall);
         setAudioChannel(0);
-        if(pAudioPlayer->streamIndex >= 0 && pAudioPlayer->streamIndex < pFormatCtx->nb_streams)
-        {
-            if(getAvCodecContext(pFormatCtx->streams[pAudioPlayer->streamIndex]->codecpar, pAudioPlayer) != 0)
-            {
+        if (pAudioPlayer->streamIndex >= 0 && pAudioPlayer->streamIndex < pFormatCtx->nb_streams) {
+            if (getAvCodecContext(pFormatCtx->streams[pAudioPlayer->streamIndex]->codecpar, pAudioPlayer) != 0) {
                 exit = true;
                 pthread_mutex_unlock(&init_mutex);
                 return 1;
@@ -120,14 +106,11 @@ int FFmpeg::decodeFFmpeg() {
 
 
     }
-    if(videochannels.size() > 0)
-    {
+    if (videochannels.size() > 0) {
         pVideoPlayer = new VideoPlayer(pJavaCall, pAudioPlayer, pPlayStatus);
         setVideoChannel(0);
-        if(pVideoPlayer->streamIndex >= 0 && pVideoPlayer->streamIndex < pFormatCtx->nb_streams)
-        {
-            if(getAvCodecContext(pFormatCtx->streams[pVideoPlayer->streamIndex]->codecpar, pVideoPlayer) != 0)
-            {
+        if (pVideoPlayer->streamIndex >= 0 && pVideoPlayer->streamIndex < pFormatCtx->nb_streams) {
+            if (getAvCodecContext(pFormatCtx->streams[pVideoPlayer->streamIndex]->codecpar, pVideoPlayer) != 0) {
                 exit = true;
                 pthread_mutex_unlock(&init_mutex);
                 return 1;
@@ -135,44 +118,43 @@ int FFmpeg::decodeFFmpeg() {
         }
     }
 
-    if(pAudioPlayer == NULL && pVideoPlayer == NULL)
-    {
+    if (pAudioPlayer == NULL && pVideoPlayer == NULL) {
         exit = true;
         pthread_mutex_unlock(&init_mutex);
         return 1;
     }
-    if(pAudioPlayer != NULL)
-    {
+    if (pAudioPlayer != NULL) {
         pAudioPlayer->duration = pFormatCtx->duration / 1000000;
         pAudioPlayer->sample_rate = pAudioPlayer->pAVCodecContext->sample_rate;
-        if(pVideoPlayer != NULL)
-        {
+        if (pVideoPlayer != NULL) {
             pAudioPlayer->setVideo(true);
         }
     }
-    if(pVideoPlayer != NULL)
-    {
+    if (pVideoPlayer != NULL) {
         LOGE("codec name is %s", pVideoPlayer->pAVCodecContext->codec->name);
         LOGE("codec long name is %s", pVideoPlayer->pAVCodecContext->codec->long_name);
-        if(!pJavaCall->isOnlySoft(THREAD_CHILD))
-        {
+        if (!pJavaCall->isOnlySoft(THREAD_CHILD)) {
             mimeType = getMimeType(pVideoPlayer->pAVCodecContext->codec->name);
-        } else{
+        } else {
             mimeType = -1;
         }
 
-        if(mimeType != -1)
-        {
-            pJavaCall->onInitMediacodec(THREAD_CHILD, mimeType, pVideoPlayer->pAVCodecContext->width, pVideoPlayer->pAVCodecContext->height, pVideoPlayer->pAVCodecContext->extradata_size, pVideoPlayer->pAVCodecContext->extradata_size, pVideoPlayer->pAVCodecContext->extradata, pVideoPlayer->pAVCodecContext->extradata);
+        if (mimeType != -1) {
+            pJavaCall->onInitMediacodec(THREAD_CHILD, mimeType, pVideoPlayer->pAVCodecContext->width,
+                                        pVideoPlayer->pAVCodecContext->height,
+                                        pVideoPlayer->pAVCodecContext->extradata_size,
+                                        pVideoPlayer->pAVCodecContext->extradata_size,
+                                        pVideoPlayer->pAVCodecContext->extradata,
+                                        pVideoPlayer->pAVCodecContext->extradata);
         }
         pVideoPlayer->duration = pFormatCtx->duration / 1000000;
     }
     LOGD("准备ing");
     LOGD("视频信息：------------------------------------------------------------->");
-    LOGD("视频地址：%s",urlpath);
-    LOGD("视频时长：%d",duration);
-    LOGD("视频宽度：%d",getVideoWidth());
-    LOGD("视频高度：%d",getVideoHeight());
+    LOGD("视频地址：%s", urlpath);
+    LOGD("视频时长：%d", duration);
+    LOGD("视频宽度：%d", getVideoWidth());
+    LOGD("视频高度：%d", getVideoHeight());
     LOGD("视频信息：<-------------------------------------------------------------");
     pJavaCall->onParpared(THREAD_CHILD);
     LOGD("准备end");
@@ -184,27 +166,23 @@ int FFmpeg::decodeFFmpeg() {
 int FFmpeg::getAvCodecContext(AVCodecParameters *parameters, BasePlayer *basePlayer) {
 
     AVCodec *dec = avcodec_find_decoder(parameters->codec_id);
-    if(!dec)
-    {
+    if (!dec) {
         pJavaCall->onError(THREAD_CHILD, 3, "get avcodec fail");
         exit = true;
         return 1;
     }
     basePlayer->pAVCodecContext = avcodec_alloc_context3(dec);
-    if(!basePlayer->pAVCodecContext)
-    {
+    if (!basePlayer->pAVCodecContext) {
         pJavaCall->onError(THREAD_CHILD, 4, "alloc avcodecctx fail");
         exit = true;
         return 1;
     }
-    if(avcodec_parameters_to_context(basePlayer->pAVCodecContext, parameters) != 0)
-    {
+    if (avcodec_parameters_to_context(basePlayer->pAVCodecContext, parameters) != 0) {
         pJavaCall->onError(THREAD_CHILD, 5, "copy avcodecctx fail");
         exit = true;
         return 1;
     }
-    if(avcodec_open2(basePlayer->pAVCodecContext, dec, 0) != 0)
-    {
+    if (avcodec_open2(basePlayer->pAVCodecContext, dec, 0) != 0) {
         pJavaCall->onError(THREAD_CHILD, 6, "open avcodecctx fail");
         exit = true;
         return 1;
@@ -226,50 +204,42 @@ int FFmpeg::getDuration() {
 int FFmpeg::start() {
     exit = false;
     int count = 0;
-    int ret  = -1;
-    if(pAudioPlayer != NULL)
-    {
+    int ret = -1;
+    if (pAudioPlayer != NULL) {
         pAudioPlayer->playAudio();
     }
-    if(pVideoPlayer != NULL)
-    {
-        if(mimeType == -1)
-        {
+    if (pVideoPlayer != NULL) {
+        if (mimeType == -1) {
             pVideoPlayer->playVideo(DECODE_SOFTWARE);
-        }
-        else
-        {
+        } else {
             pVideoPlayer->playVideo(DECODE_HARDWARE);
         }
     }
 
-    AVBitStreamFilterContext* mimType = NULL;
-    if(mimeType == CODEC_TYPE_H264){
-        mimType =  av_bitstream_filter_init("h264_mp4toannexb");
-    }
-    else if(mimeType == CODEC_TYPE_HEVC){
-        mimType =  av_bitstream_filter_init("hevc_mp4toannexb");
-    }
-    else if(mimeType == CODEC_TYPE_MPEG4){
-        mimType =  av_bitstream_filter_init("h264_mp4toannexb");
-    }
-    else if(mimeType == CODEC_TYPE_WMV){
-        mimType =  av_bitstream_filter_init("h264_mp4toannexb");
+    AVBitStreamFilterContext *mimType = NULL;
+    if (mimeType == CODEC_TYPE_H264) {
+        mimType = av_bitstream_filter_init("h264_mp4toannexb");
+    } else if (mimeType == CODEC_TYPE_HEVC) {
+        mimType = av_bitstream_filter_init("hevc_mp4toannexb");
+    } else if (mimeType == CODEC_TYPE_MPEG4) {
+        mimType = av_bitstream_filter_init("h264_mp4toannexb");
+    } else if (mimeType == CODEC_TYPE_WMV) {
+        mimType = av_bitstream_filter_init("h264_mp4toannexb");
     }
 
-    while(!pPlayStatus->exit){
+    while (!pPlayStatus->exit) {
         exit = false;
         //暂停
-        if(pPlayStatus->pause){
+        if (pPlayStatus->pause) {
             av_usleep(1000 * 100);
             continue;
         }
-        if(pAudioPlayer != NULL && pAudioPlayer->queue->getAvPacketSize() > 100){
+        if (pAudioPlayer != NULL && pAudioPlayer->queue->getAvPacketSize() > 100) {
 //            LOGE("pAudioPlayer 等待..........");
             av_usleep(1000 * 100);
             continue;
         }
-        if(pVideoPlayer != NULL && pVideoPlayer->queue->getAvPacketSize() > 100){
+        if (pVideoPlayer != NULL && pVideoPlayer->queue->getAvPacketSize() > 100) {
 //            LOGE("pVideoPlayer 等待..........");
             av_usleep(1000 * 100);
             continue;
@@ -278,49 +248,49 @@ int FFmpeg::start() {
         pthread_mutex_lock(&seek_mutex);
         ret = av_read_frame(pFormatCtx, packet);
         pthread_mutex_unlock(&seek_mutex);
-        if(pPlayStatus->seek){
+        if (pPlayStatus->seek) {
             av_packet_free(&packet);
             av_free(packet);
             continue;
         }
-        if(ret == 0){
-            if(pAudioPlayer != NULL && packet->stream_index ==  pAudioPlayer->streamIndex){
+        if (ret == 0) {
+            if (pAudioPlayer != NULL && packet->stream_index == pAudioPlayer->streamIndex) {
                 count++;
                 LOGE("解码第 %d 帧", count);
                 pAudioPlayer->queue->putAvpacket(packet);
-            }else if(pVideoPlayer != NULL && packet->stream_index == pVideoPlayer->streamIndex){
-                if(mimType != NULL && !isAvi){
+            } else if (pVideoPlayer != NULL && packet->stream_index == pVideoPlayer->streamIndex) {
+                if (mimType != NULL && !isAvi) {
                     uint8_t *data;
-                    av_bitstream_filter_filter(mimType, pFormatCtx->streams[pVideoPlayer->streamIndex]->codec, NULL, &data, &packet->size, packet->data, packet->size, 0);
+                    av_bitstream_filter_filter(mimType, pFormatCtx->streams[pVideoPlayer->streamIndex]->codec, NULL,
+                                               &data, &packet->size, packet->data, packet->size, 0);
                     uint8_t *tdata = NULL;
                     tdata = packet->data;
                     packet->data = data;
-                    if(tdata != NULL){
+                    if (tdata != NULL) {
                         av_free(tdata);
                     }
                 }
                 pVideoPlayer->queue->putAvpacket(packet);
-            }
-            else{
+            } else {
                 av_packet_free(&packet);
                 av_free(packet);
                 packet = NULL;
             }
-        } else{
+        } else {
             av_packet_free(&packet);
             av_free(packet);
             packet = NULL;
-            if((pVideoPlayer != NULL && pVideoPlayer->queue->getAvFrameSize() == 0)
-            || (pAudioPlayer != NULL && pAudioPlayer->queue->getAvPacketSize() == 0)){
+            if ((pVideoPlayer != NULL && pVideoPlayer->queue->getAvFrameSize() == 0)
+                || (pAudioPlayer != NULL && pAudioPlayer->queue->getAvPacketSize() == 0)) {
                 pPlayStatus->exit = true;
                 break;
             }
         }
     }
-    if(mimType != NULL){
+    if (mimType != NULL) {
         av_bitstream_filter_close(mimType);
     }
-    if(!exitByUser && pJavaCall != NULL){
+    if (!exitByUser && pJavaCall != NULL) {
         pJavaCall->onComplete(THREAD_CHILD);
     }
     exit = true;
@@ -332,8 +302,8 @@ void FFmpeg::release() {
     pthread_mutex_lock(&init_mutex);
     LOGE("开始释放 ffmpeg");
     int sleepCount = 0;
-    while(!exit){
-        if(sleepCount > 1000)//十秒钟还没有退出就自动强制退出
+    while (!exit) {
+        if (sleepCount > 1000)//十秒钟还没有退出就自动强制退出
         {
             exit = true;
         }
@@ -344,50 +314,50 @@ void FFmpeg::release() {
     }
     LOGE("释放audio....................................");
 
-    if(pAudioPlayer != NULL){
+    if (pAudioPlayer != NULL) {
         LOGE("释放audio....................................2");
 
         pAudioPlayer->realease();
-        delete(pAudioPlayer);
+        delete (pAudioPlayer);
         pAudioPlayer = NULL;
     }
     LOGE("释放video....................................");
 
-    if(pVideoPlayer != NULL){
+    if (pVideoPlayer != NULL) {
         LOGE("释放video....................................2");
 
         pVideoPlayer->release();
-        delete(pVideoPlayer);
+        delete (pVideoPlayer);
         pVideoPlayer = NULL;
     }
     LOGE("释放format...................................");
 
-    if(pFormatCtx != NULL){
+    if (pFormatCtx != NULL) {
         avformat_close_input(&pFormatCtx);
         avformat_free_context(pFormatCtx);
         pFormatCtx = NULL;
     }
     LOGE("释放javacall.................................");
 
-    if(pJavaCall != NULL){
+    if (pJavaCall != NULL) {
         pJavaCall = NULL;
     }
     pthread_mutex_unlock(&init_mutex);
 }
 
 void FFmpeg::pause() {
-    if(pPlayStatus != NULL){
+    if (pPlayStatus != NULL) {
         pPlayStatus->pause = true;
-        if(pAudioPlayer != NULL){
+        if (pAudioPlayer != NULL) {
             pAudioPlayer->pause();
         }
     }
 }
 
 void FFmpeg::resume() {
-    if(pPlayStatus != NULL){
+    if (pPlayStatus != NULL) {
         pPlayStatus->pause = false;
-        if(pAudioPlayer != NULL){
+        if (pAudioPlayer != NULL) {
             pAudioPlayer->resume();
         }
     }
@@ -395,17 +365,17 @@ void FFmpeg::resume() {
 
 int FFmpeg::getMimeType(const char *codecName) {
 
-    if(strcmp(codecName, "h264") == 0){
+    if (strcmp(codecName, "h264") == 0) {
         return CODEC_TYPE_H264;
     }
-    if(strcmp(codecName, "hevc") == 0){
+    if (strcmp(codecName, "hevc") == 0) {
         return CODEC_TYPE_HEVC;
     }
-    if(strcmp(codecName, "mpeg4") == 0){
+    if (strcmp(codecName, "mpeg4") == 0) {
         isAvi = true;
         return CODEC_TYPE_MPEG4;
     }
-    if(strcmp(codecName, "wmv3") == 0){
+    if (strcmp(codecName, "wmv3") == 0) {
         isAvi = true;
         return CODEC_TYPE_WMV;
     }
@@ -414,23 +384,23 @@ int FFmpeg::getMimeType(const char *codecName) {
 }
 
 int FFmpeg::seek(int64_t sec) {
-    if(sec >= duration){
+    if (sec >= duration) {
         return -1;
     }
-    if(pPlayStatus->load){
+    if (pPlayStatus->load) {
         return -1;
     }
-    if(pFormatCtx != NULL){
+    if (pFormatCtx != NULL) {
         pPlayStatus->seek = true;
         pthread_mutex_lock(&seek_mutex);
         int64_t rel = sec * AV_TIME_BASE;
         int ret = avformat_seek_file(pFormatCtx, -1, INT64_MIN, rel, INT64_MAX, 0);
-        if(pAudioPlayer != NULL){
+        if (pAudioPlayer != NULL) {
             pAudioPlayer->queue->clearAvpacket();
 //            av_seek_frame(pFormatCtx, pAudioPlayer->streamIndex, sec * pAudioPlayer->time_base.den, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD);
             pAudioPlayer->setClock(0);
         }
-        if(pVideoPlayer != NULL){
+        if (pVideoPlayer != NULL) {
             pVideoPlayer->queue->clearAvFrame();
             pVideoPlayer->queue->clearAvpacket();
 //            av_seek_frame(pFormatCtx, pVideoPlayer->streamIndex, sec * pVideoPlayer->time_base.den, AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD);
@@ -445,11 +415,11 @@ int FFmpeg::seek(int64_t sec) {
 }
 
 void FFmpeg::setAudioChannel(int index) {
-    if(pAudioPlayer != NULL){
+    if (pAudioPlayer != NULL) {
         int channelsize = audiochannels.size();
-        if(index < channelsize){
-            for(int i = 0; i < channelsize; i++){
-                if(i == index){
+        if (index < channelsize) {
+            for (int i = 0; i < channelsize; i++) {
+                if (i == index) {
                     pAudioPlayer->time_base = audiochannels.at(i)->time_base;
                     pAudioPlayer->streamIndex = audiochannels.at(i)->channelId;
                 }
@@ -460,13 +430,13 @@ void FFmpeg::setAudioChannel(int index) {
 }
 
 void FFmpeg::setVideoChannel(int id) {
-    if(pVideoPlayer != NULL){
+    if (pVideoPlayer != NULL) {
         pVideoPlayer->streamIndex = videochannels.at(id)->channelId;
         pVideoPlayer->time_base = videochannels.at(id)->time_base;
         pVideoPlayer->rate = 1000 / videochannels.at(id)->fps;
-        if(videochannels.at(id)->fps >= 60){
+        if (videochannels.at(id)->fps >= 60) {
             pVideoPlayer->frameRateBig = true;
-        } else{
+        } else {
             pVideoPlayer->frameRateBig = false;
         }
 
@@ -478,14 +448,14 @@ int FFmpeg::getAudioChannels() {
 }
 
 int FFmpeg::getVideoWidth() {
-    if(pVideoPlayer != NULL && pVideoPlayer->pAVCodecContext != NULL){
+    if (pVideoPlayer != NULL && pVideoPlayer->pAVCodecContext != NULL) {
         return pVideoPlayer->pAVCodecContext->width;
     }
     return 0;
 }
 
 int FFmpeg::getVideoHeight() {
-    if(pVideoPlayer != NULL && pVideoPlayer->pAVCodecContext != NULL){
+    if (pVideoPlayer != NULL && pVideoPlayer->pAVCodecContext != NULL) {
         return pVideoPlayer->pAVCodecContext->height;
     }
     return 0;
